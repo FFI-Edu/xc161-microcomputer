@@ -1,0 +1,149 @@
+C166 COMPILER V7.53.0.0, MCPR_XC161_LCD                                                    11/18/2013 15:21:49 PAGE 1   
+
+
+C166 COMPILER V7.53.0.0, COMPILATION OF MODULE MCPR_XC161_LCD
+OBJECT MODULE PLACED IN mcpr_xc161_lcd.OBJ
+COMPILER INVOKED BY: C:\Program Files (x86)\Keil\C166\BIN\C166.EXE mcpr_xc161_lcd.c MODV2 COMPACT BROWSE MODV2 DEBUG TAB
+                    -S(2) 
+
+ stmt lvl     source
+
+    1         #include "mcpr_xc161_lcd.h"
+    2         #include <string.h>
+    3         
+    4         void lcd_init() {
+    5  1         wait(40000); //40ms warten nach power on
+    6  1         lcd_write(0x0, 0x30);
+    7  1         wait(5000);
+    8  1         lcd_write(0x0, 0x30);
+    9  1         wait(100);
+   10  1         lcd_write(0x0, 0x30);
+   11  1         wait(100);
+   12  1         lcd_write(0x0, 0x38);
+   13  1         lcd_write(0x0, 0x08);
+   14  1         lcd_write(0x0, 0x01);
+   15  1         wait(5000);
+   16  1         lcd_write(0x0, 0x06);  
+   17  1         lcd_write(0x0, 0x0C);
+   18  1         lcd_write(0x0, 0x80);
+   19  1      }
+   20         
+   21         void lcd_backlight_controller(uint16 ks, uint8* lkey_state_up, uint8* lkey_state_down, uint8* last_lcd){    
+             -                          
+   22  1         uint8 nkey_state_up   = ((uint8) ks);
+   23  1         uint8 nkey_state_down = ((uint8) (ks>>8));
+   24  1         if( nkey_state_up > *lkey_state_up ){
+   25  2            if( (*last_lcd & 0x01) > 0 ){
+   26  3               lcd_backlight(0);
+   27  3               *last_lcd = *last_lcd & (~0x01);
+   28  3            }else{
+   29  3               lcd_backlight(1);
+   30  3               *last_lcd = *last_lcd | 0x01;
+   31  3            }
+   32  2         }
+   33  1         if( nkey_state_down < *lkey_state_down ){
+   34  2            if( (*last_lcd & 0x02) > 0 ){
+   35  3               lcd_backlight(0);
+   36  3               *last_lcd = *last_lcd & (~0x02);
+   37  3            }else{
+   38  3               lcd_backlight(1);
+   39  3               *last_lcd = *last_lcd | 0x02;
+   40  3            }
+   41  2         }
+   42  1         *lkey_state_up   = nkey_state_up;
+   43  1         *lkey_state_down = nkey_state_down;
+   44  1              
+   45  1      }
+   46         
+   47         void lcd_backlight (uint8 state) {
+   48  1         DP7   = 0x00F0;
+   49  1         P7_P4 = state;
+   50  1      }
+   51         
+   52         void lcd_write(uint8 data_type, uint8 data_byte){
+   53  1         DP7_P6= 0x1;
+C166 COMPILER V7.53.0.0, MCPR_XC161_LCD                                                    11/18/2013 15:21:49 PAGE 2   
+
+   54  1         P7_P6 = 0x0;
+   55  1         DP7_P5= 0x1;
+   56  1         P7_P5 = 0x1;
+   57  1         DP7_P7= 0x1;
+   58  1         P7_P7 = data_type;
+   59  1         IC3  = data_byte;
+   60  1         wait(20);
+   61  1         P7_P5 = 0x0;
+   62  1         wait(20);
+   63  1      }
+   64         
+   65         void lcd_setline(uint8 line) {
+   66  1         switch(line) {
+   67  2            case 0: lcd_write(0x0, 0x80); break;
+   68  2            case 1: lcd_write(0x0, 0xC0); break;
+   69  2            case 2: lcd_write(0x0, 0x94); break;
+   70  2            case 3: lcd_write(0x0, 0xD4); break;
+   71  2            default: break;
+   72  2         }
+   73  1      }
+   74         
+   75         void lcd_sendstring(uint8 line,  char* str) {
+   76  1         uint8 i = 0;
+   77  1         uint32 count = 20;
+   78  1         lcd_setline(line);
+   79  1         while(i<21 && str[i] != '\0') {
+   80  2            lcd_write(0x1, str[i]);
+   81  2            count--;
+   82  2            i++;
+   83  2         }
+   84  1         while(count>0){
+   85  2            lcd_write(0x1, 0x20); //0x20 = ASCII SPACE
+   86  2            count--;
+   87  2         }
+   88  1              
+   89  1      }
+   90         
+   91         void lcd_writestatus(uint16* cycle, uint16* temp){
+   92  1         char message[21];
+   93  1         
+   94  1         sprintf (message, "Temp: %ld", *temp);
+*** WARNING C140 IN LINE 94 OF mcpr_xc161_lcd.c: 'sprintf' undefined; assuming 'extern int sprintf()'
+   95  1         lcd_sendstring(0, message);
+   96  1         
+   97  1         sprintf (message, "Frequenz: %ld", *cycle);
+   98  1         lcd_sendstring(1, message);
+   99  1         
+  100  1         if( (*temp > MAX_TEMP || *temp < MIN_TEMP) )
+  101  1            sprintf (message, "WARNING: TEMP", 0x0);
+  102  1         else
+  103  1            sprintf (message, " ", 0x0);
+  104  1         lcd_sendstring(2, message);
+  105  1         
+  106  1      }
+  107         
+  108         void wait(uint16 us) {
+  109  1         uint32 t = T_WAIT * (uint32)us;
+  110  1         uint32 i = 0;
+  111  1         for(i=0; i<=t; i++);
+  112  1      }
+
+
+C166 COMPILER V7.53.0.0, MCPR_XC161_LCD                                                    11/18/2013 15:21:49 PAGE 3   
+
+MODULE INFORMATION:   INITIALIZED  UNINITIALIZED
+  CODE SIZE        =         820     --------
+  NEAR-CONST SIZE  =    --------     --------
+  FAR-CONST SIZE   =          40     --------
+  HUGE-CONST SIZE  =    --------     --------
+  XHUGE-CONST SIZE =    --------     --------
+  NEAR-DATA SIZE   =    --------     --------
+  FAR-DATA SIZE    =    --------     --------
+  XHUGE-DATA SIZE  =    --------     --------
+  IDATA-DATA SIZE  =    --------     --------
+  SDATA-DATA SIZE  =    --------     --------
+  BDATA-DATA SIZE  =    --------     --------
+  HUGE-DATA SIZE   =    --------     --------
+  BIT SIZE         =    --------     --------
+  INIT'L SIZE      =    --------     --------
+END OF MODULE INFORMATION.
+
+
+C166 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)

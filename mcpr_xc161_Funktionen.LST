@@ -1,0 +1,33 @@
+C166 COMPILER V7.53.0.0, MCPR_XC161_FUNKTIONEN                                             11/14/2013 13:47:09 PAGE 1   
+
+
+C166 COMPILER V7.53.0.0, COMPILATION OF MODULE MCPR_XC161_FUNKTIONEN
+OBJECT MODULE PLACED IN mcpr_xc161_Funktionen.OBJ
+COMPILER INVOKED BY: C:\Program Files (x86)\Keil\C166\BIN\C166.EXE mcpr_xc161_Funktionen.c MODV2 COMPACT BROWSE MODV2 DE
+                    -BUG TABS(2) 
+
+ stmt lvl     source
+
+    1         //bla
+*** WARNING C38 IN LINE 2 OF mcpr_xc161_Funktionen.c: empty translation unit
+
+
+MODULE INFORMATION:   INITIALIZED  UNINITIALIZED
+  CODE SIZE        =    --------     --------
+  NEAR-CONST SIZE  =    --------     --------
+  FAR-CONST SIZE   =    --------     --------
+  HUGE-CONST SIZE  =    --------     --------
+  XHUGE-CONST SIZE =    --------     --------
+  NEAR-DATA SIZE   =    --------     --------
+  FAR-DATA SIZE    =    --------     --------
+  XHUGE-DATA SIZE  =    --------     --------
+  IDATA-DATA SIZE  =    --------     --------
+  SDATA-DATA SIZE  =    --------     --------
+  BDATA-DATA SIZE  =    --------     --------
+  HUGE-DATA SIZE   =    --------     --------
+  BIT SIZE         =    --------     --------
+  INIT'L SIZE      =    --------     --------
+END OF MODULE INFORMATION.
+
+
+C166 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)

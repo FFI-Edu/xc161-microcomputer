@@ -1,0 +1,2189 @@
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE     1
+
+
+MACRO ASSEMBLER A166 V5.36.0.1
+OBJECT MODULE PLACED IN mcpr_xc_start_002.OBJ
+ASSEMBLER INVOKED BY: C:\Program Files (x86)\Keil\C166\BIN\A166.EXE mcpr_xc_start_002.A66 MODV2 SEGMENTED MODV2 SET(COMP
+                      ACT) DEBUG EP
+
+LOC      OBJ             LINE     SOURCE
+
+                            1     $MODV2                                  ; Define C166v2 core mode
+                            2     ;
+                            3     ;------------------------------------------------------------------------------
+                            4     ;  This file is part of the C166 Compiler package
+                            5     ;  Copyright KEIL ELEKTRONIK GmbH 1993 - 2002
+                            6     ;  Version 4.04
+                            7     ;  Modified: L. Gaul SS2008
+                            8     ;------------------------------------------------------------------------------
+                            9     ;  START_V2.A66:  This code is executed after processor reset and provides the
+                           10     ;                 startup sequence for the C166v2/Super10 architecture CPU's.
+                           11     ;                 (i.e. XC161, XC164 ect.)
+                           12     ;
+                           13     ;  You may add this file to a uVision2 project - in this case it will be 
+                           14     ;  automatically assembled and linked.
+                           15     ;
+                           16     ;  For manual translation of this file use A166 with the following invocation:
+                           17     ;
+                           18     ;     A166 START_V2.A66 SET (<model>)
+                           19     ;
+                           20     ;     <model> determines the memory model and can be one of the following:
+                           21     ;         TINY, SMALL, COMPACT, HCOMPACT, MEDIUM, LARGE or HLARGE
+                           22     ;
+                           23     ;  Example:  A166 START_V2.A66 SET (SMALL)
+                           24     ;
+                           25     ;  For manual linkage of the modified START_V2.OBJ file to your application
+                           26     ;  use the following L166 invocation:
+                           27     ;
+                           28     ;     L166 <your object file list>, START_V2.OBJ <controls>
+                           29     ;
+                           30     ;------------------------------------------------------------------------------
+                           31     ; Setup model-dependend Assembler controls
+                           32     $CASE
+                           33     $IF NOT TINY
+                           34     $SEGMENTED
+                           35     $ENDIF
+                           36     ; Settings for ADDRSEL calculation (do not change!)
+ 0400                      37     KB          EQU    0x400     ; define KB constant for CS _SIZE calculation
+ 00100000                  38     MB          EQU    0x400*KB  ; define MB as 1024KB
+                           39     ;------------------------------------------------------------------------------
+                           40     ;
+                           41     ; Definitions for System and User Stack
+                           42     ; =====================================
+                           43     ;
+                           44     ; STKSZ: Maximum System Stack Size selection
+                           45     ;  Defines the system stack space that is used by CALL/RET and PUSH/POP 
+                           46     ;  instructions.  The system stack space must be adjusted according the actual
+                           47     ;  requirements of the application.
+ 0200                      48     SSTSZ   EQU     0x200    ; set System Stack Size to 200H Bytes
+                           49     ;
+                           50     ; USTSZ: User Stack Size Definition 
+                           51     ;  Defines the user stack space available for automatics.  This stack space is
+                           52     ;  accessed by R0.  The user stack space must be adjusted according the actual
+                           53     ;  requirements of the application.
+ 1000                      54     USTSZ   EQU     0x1000   ; set User Stack Size to 1000H Bytes.
+                           55     ;
+                           56     ;
+                           57     ; Definitions for Startup Code
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE     2
+
+                           58     ; ============================
+                           59     ;
+                           60     ; CLR_MEMORY: Disable Memory Zero Initialization of RAM area
+                           61     ; --- Set CLR_MEMORY = 0 to disable memory zero initilization
+                           62     $SET (CLR_MEMORY = 1)
+                           63     ;
+                           64     ; INIT_VARS: Disable Variable Initialization
+                           65     ; --- Set INIT_VARS = 0 to disable variable initilization
+                           66     $SET (INIT_VARS = 1)
+                           67     ;
+                           68     ; DPPUSE:  Re-assign DPP registers
+                           69     ; --- Set DPPUSE = 0 to reduce the code size of the startup code, if you
+                           70     ;                    are not using the L166 DPPUSE directive.
+                           71     $SET (DPPUSE = 1)
+                           72     ;
+                           73     ; DPP3USE: Use DPP3 register during variable initilization
+                           74     ; --- Set DPP3USE = 0 to disable the usage of DPP3 during initilization of
+                           75     ;                     variables.  This option might be required if you write
+                           76     ;                     program parts that are reloaded during application 
+                           77     ;                     execution and increase code size of the startup code.
+                           78     $SET (DPP3USE = 1)
+                           79     ;
+                           80     ;
+                           81     ; Definitions for Cpu Configuration Register CPUCON1
+                           82     ; ==================================================
+                           83     ;
+                           84     ; ZCJ: Zero Cycle Jump Function (CPUCON1.0):
+ 0000                      85     _ZCJ     EQU    0       ; 0 = Disable Zero Cycle Jump Function
+                           86                             ; 1 = Enable Zero Cycle Jump Function
+                           87     ;
+                           88     ; BP: Branch Prediction Unit (CPUCON1.1):
+ 0000                      89     _BP      EQU    0       ; 0 = Disable Branch Prediction Unit
+                           90                             ; 1 = Enable Branch Prediction Unit
+                           91     ;
+                           92     ; INTSCXT: Interruptability of Switch Context Instruction (CPUCON1.2):
+ 0000                      93     _INTSCXT EQU    0       ; 0 = Disable Interruption of SCXT instruction
+                           94                             ; 1 = Enable Interruption of SCXT instruction
+                           95     ;
+                           96     ; SGTDIS: Disable Segmentation Control (CPUCON1.3):
+                                  $IF TINY
+                                  _SGTDIS  EQU    1       ; disable segmented mode for TINY model
+                           99     $ELSE
+ 0000                     100     _SGTDIS  EQU    0       ; enable segmented mode (Reset Value)
+                          101     $ENDIF
+                          102     ;
+                          103     ; WDTCTL: Watchdog Timer Control (CPUCON1.4):
+ 0000                     104     _WDTCTL  EQU    0       ; 0 = DISWDT executable until end of EINIT
+                          105                             ; 1 = DISWDT/ENWDT always executable
+                          106     ;
+                          107     ; VECSC: Vector Table Scaling Factor (CPUCON1.5 .. CPUCON1.6)
+ 0000                     108     _VECSC   EQU    0       ; 0 = Space between two vectors is 2 words
+                          109                             ; 1 = Space between two vectors is 4 words
+                          110                             ; 2 = Space between two vectors is 8 words
+                          111                             ; 3 = Space between two vectors is 16 words
+                          112     ;
+                          113     ;
+                          114     ; Definitions for CPU Configuration Register CPUCON2
+                          115     ; ==================================================
+                          116     ;
+                          117     ; INIT_CPUCON2: Init CPUCON2 register
+                          118     ; --- Set INIT_CPUCON2 = 1 to initilize the SYSCON1 register
+                          119     $SET (INIT_CPUCON2 = 0) ; default: do not initilize CPUCON2  
+                          120     ;
+                          121     ; SL: Short Loop Mode (CPUCON2.0)
+ 0000                     122     _SL       EQU   0       ; 0 = Short Loop mode disabled
+                          123                             ; 1 = Short Loop mode enabled
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE     3
+
+                          124     ;
+                          125     ; FASTPEC: Fast Pec Event Injection (CPUCON2.1)
+ 0000                     126     _FASTPEC  EQU   0       ; 0 = Direct Injection of PEC Events disabled
+                          127                             ; 1 = Direct Injection of PEC Events enabled
+                          128     ;
+                          129     ; FASTBL: Fast Block Transfer Injection (CPUCON2.2)
+ 0000                     130     _FASTBL   EQU   0       ; 0 = Direct Injection for Block Transfers disabled
+                          131                             ; 1 = Direct Injection for Block Transfers enabled
+                          132     ;
+                          133     ; RETST: Return Stack (CPUCON2.3)
+ 0000                     134     _RETST    EQU   0       ; 0 = Return Stack disabled
+                          135                             ; 1 = Return Stack enabled
+                          136     ;
+                          137     ; OVRUN: Pipeline Bubble Overrun (CPUCON2.4)
+ 0000                     138     _OVRUN    EQU   0       ; 0 = Overrun of Pipeline Bubbles not allowed
+                          139                             ; 1 = Overrun of Pipeline Bubbles allowed
+                          140     ;
+                          141     ; ZSC: Zero Cycle Jump Cache (CPUCON2.5)
+ 0000                     142     _ZSC      EQU   0       ; 0 = Zero Cycle Jump Cache disabled
+                          143                             ; 1 = Zero Cycle Jump Cache enabled
+                          144     ;
+                          145     ; STEN: Stall Instruction (CPUCON2.6)
+ 0000                     146     _STEN     EQU   0       ; 0 = Stall instruction disabled
+                          147                             ; 1 = Stall instruction enabled
+                          148     ;
+                          149     ; EIOIAEN: Early IO Injection Acknowledge
+ 0000                     150     _EIOIAEN  EQU   0       ; 0 = Injection ack. by destructive read not guaranteed
+                          151     ;                       ; 1 = Injection ack. by destructive read guaranteed
+                          152     ; 
+                          153     ; BYPF: Fetch Bypass Control (CPUCON2.8)
+ 0000                     154     _BYPF     EQU   0       ; 0 = Bypass Path from Fetch to Decode disabled
+                          155                             ; 1 = Bypass Path from Fetch to Decode enabled
+                          156     ;
+                          157     ; BYPPF: Prefecth Bypass Control (CPUCON2.9)
+ 0000                     158     _BYPPF    EQU   0       ; 0 = Bypass Path from Prefetch to Decode disabled
+                          159                             ; 1 = Bypass Path from Prefetch to Decode enabled
+                          160     ;
+                          161     ; FIFOFED: FIFO Fill Configuration (CPUCON2.10 .. CPUCON2.11)
+ 0000                     162     _FIFOFED  EQU   0       ; 0 = FIFO disabled
+                          163                             ; 1 = FIFO filled with up to 1 instruction per cycle
+                          164                             ; 2 = FIFO filled with up to 2 instructions per cycle
+                          165                             ; 3 = FIFO filled with up to 3 instructions per cycle
+                          166     ;
+                          167     ; FIFODEPTH: FIFO Depth Configuration (CPUCON2.12 .. CPUCON2.15)
+ 0000                     168     _FIFODEPTH EQU  0       ; 0 = No FIFO entries (No FIFO)
+                          169                             ; 1 = 1 FIFO entry
+                          170                             ; ...
+                          171                             ; 8 = 8 FIFO entries
+                          172                             ; 9 - 15 = reserved
+                          173     ;
+                          174     ; Definitions for System Configuration Register SYSCON1
+                          175     ; =====================================================
+                          176     ;
+                          177     ; INIT_SYSCON1: Init SYSCON1 register
+                          178     ; --- Set INIT_SYSCON1 = 1 to initilize the SYSCON1 register
+                          179     $SET (INIT_SYSCON1 = 0)
+                          180     ;
+                          181     ; SLEEPCON: Sleep Mode Configuration (SYSCON1.0 .. SYSCON1.1)
+ 0000                     182     _SLEEPCON EQU    0      ; 0 = Normal IDLE mode entered upone IDLE instruction
+                          183                             ; 1 = SLEEP mode entered upone IDLE instruction
+                          184                             ; 2 - 3 = reserved
+                          185     ;
+                          186     ; PDCFG: Port Driver Configuration (SYSCON1.2 .. SYSCON1.3)
+ 0000                     187     _PDCFG    EQU    0      ; 0 = Port drivers are always ON (default)
+                          188                             ; 1 = Port drivers are off in IDLE or Sleep mode
+                          189                             ; 2 = Port drivers are off in Powerdown mode
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE     4
+
+                          190                             ; 3 = reserved
+                          191     ;
+                          192     ; PFCFG: Program Flash Configuration (SYSCON1.4 .. SYSCON1.5)
+ 0000                     193     _PFCFG    EQU    0      ; 0 = Program Flash is always ON (default)
+                          194                             ; 1 = Program Flash is off in IDLE or Sleep mode
+                          195                             ; 2 - 3 = reserved
+                          196     ;
+                          197     ; CPSYS: Clock Prescaler for System (SYSCON1.8 .. SYSCON1.10)
+ 0000                     198     _CPSYS    EQU    0      ; 0 = clock signal for CPU is PLL frequency
+                          199                             ; 1 = clock signal for CPU is PLL frequency / 2
+                          200                             ; 2 - 7 = reserved
+                          201     ;
+                          202     ;
+                          203     ; Definitions for System Configuration Register SYSCON3
+                          204     ; =====================================================
+                          205     ;
+                          206     ; INIT_SYSCON3: Init SYSCON3 register
+                          207     ; --- Set INIT_SYSCON3 = 1 to initilize the SYSCON3 register
+                          208     $SET (INIT_SYSCON3 = 1)
+                          209     ;
+                          210     ; SYSCON3:  Power Management (disable on-chip peripherals)
+                          211     ;
+ 0000                     212     ADCDIS  EQU     0       ; 1 = disable Analog/Digital Converter    (SYSCON3.0)
+ 0000                     213     ASC0DIS EQU     0       ; 1 = disable UART ASC0                   (SYSCON3.1)
+ 0000                     214     SSC0DIS EQU     0       ; 1 = disable Synchronus Serial Cnl0 SSC0 (SYSCON3.2)
+ 0000                     215     GPTDIS  EQU     0       ; 1 = disable Timer Block GPT             (SYSCON3.3)
+                          216                             ; reserved                                (SYSCON3.4)
+ 0000                     217     FMDIS   EQU     0       ; 1 = disable on-chip Flash Memory Module (SYSCON3.5)
+ 0000                     218     CC1DIS  EQU     0       ; 1 = disable CAPCOM Unit 1               (SYSCON3.6)
+ 0000                     219     CC2DIS  EQU     0       ; 1 = disable CAPCOM Unit 2               (SYSCON3.7)
+ 0000                     220     CC6DIS  EQU     0       ; 1 = disable CAPCOM Unit 6               (SYSCON3.8)
+                          221                             ; reserved                                (SYSCON3.9)
+ 0000                     222     ASC1DIS EQU     0       ; 1 = disable UART ASC1                   (SYSCON3.10)
+ 0000                     223     I2CDIS  EQU     0       ; 1 = disable I2C Bus Module              (SYSCON3.11)
+ 0000                     224     SDLMDIS EQU     0       ; 1 = disable SDLM (J1850) Module         (SYSCON3.12)
+ 0000                     225     CANDIS  EQU     0       ; 1 = disable on-chip CAN Module          (SYSCON3.13)
+                          226                             ; reserved                                (SYSCON3.14)
+ 0000                     227     SSC1DIS EQU     0       ; 1 = disable Synchronus Serial Cnl1 SSC1 (SYSCON3.15)
+                          228     ;
+                          229     ;
+                          230     ;
+                          231     ; Definitions for Reset Configuration Register RSTCON
+                          232     ; ===================================================
+                          233     ;
+                          234     ; INIT_RSTCON: Init RSTCON register
+                          235     ; --- Set INIT_RSTCON = 1 to initilize the RSTCON register
+                          236     $SET (INIT_RSTCON = 0)
+                          237     ;
+                          238     ; RSTLEN: Reset Length Control (RSTCON.0 .. RSTCON.2)
+ 0000                     239     _RSTLEN   EQU    0      ; 0 =   2 t_CPU clocks (default)
+                          240                             ; 1 =   4 t_CPU clocks
+                          241                             ; 2 =   8 t_CPU clocks
+                          242                             ; 3 =  16 t_CPU clocks
+                          243                             ; 4 =  32 t_CPU clocks
+                          244                             ; 5 =  64 t_CPU clocks
+                          245                             ; 6 = 128 t_CPU clocks
+                          246                             ; 7 = 256 t_CPU clocks
+                          247     ;
+                          248     ; RORMV: RSTOUT# Remove Control (RSTCON.4)
+ 0000                     249     _RORMV    EQU    0      ; 0 = RSTOUT delievers RSTOUT# signal
+                          250                             ; 1 = RSTOUT pin operates as GPIO
+                          251     ;
+                          252     ; ROCOFF: RSTOUT# Control Switch Off (RSTCON.5)
+ 0000                     253     _ROCOFF   EQU    0      ; 0 = RSTOUT is deactivated by user software
+                          254                             ; 1 = RSTOUT is deactiveted at end of reset
+                          255     ;
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE     5
+
+                          256     ; ROCON: RSTOUT# Control Switch Off (RSTCON.6)
+ 0000                     257     _ROCON    EQU    0      ; 0 = RSTOUT is activated upon any reset
+                          258                             ; 1 = RSTOUT is only activated upon a hardware reset
+                          259     ;
+                          260     ; RODIS: RSTOUT# Disable Control (RSTCON.7)
+ 0000                     261     _RODIS    EQU    0      ; 0 = RSTOUT is controlled by other mechanism
+                          262                             ; 1 = RSTOUT is deactivated
+                          263     ;
+                          264     ;
+                          265     ;
+                          266     ; Definitions for PLL Control Register PLLCON
+                          267     ; ===========================================
+                          268     ;
+                          269     ; INIT_PLLCON: Init PLLCON register
+                          270     ; --- Set INIT_PLLCON = 1 to initilize the PLLCON register
+                          271     $SET (INIT_PLLCON = 1)
+                          272     ;
+                          273     ; PLLODIV: PLL Output Devider (PLLCON.0 .. PLLCON.3)
+ 0004                     274     _PLLODIV  EQU    4      ; 0 .. 14  Fpll = Fvco / (PLLODIV+1)
+                          275                             ; 15 = reserved
+                          276     ;
+                          277     ; PLLIDIV: PLL Input Devider (PLLCON.4 .. PLLCON.5)
+ 0001                     278     _PLLIDIV  EQU    1      ; 0 .. 3   Fin = Fosc / (PLLIDIV+1)
+                          279     ;
+                          280     ; PLLVB: PLL VCO Band Select (PLLCON.6 .. PLLCON.7)
+ 0001                     281     _PLLVB    EQU    1      ; ValueVCO output frequency    Base frequency
+                          282                             ; 0 = 100...150 MHz            20...80 MHz
+                          283                             ; 1 = 150...200 MHz            40...130 MHz
+                          284                             ; 2 = 200...250 MHz [def.]     60...180 MHz
+                          285                             ; 3 = (250...300 MHz) Reserved
+                          286     ;
+                          287     ; PLLMUL: PLL Multiplication Factor (PLLCON.8 .. PLLCON.12)
+ 0018                     288     _PLLMUL   EQU    24     ; 7 .. 31  Fvco = Fin * (PLLMUL+1)
+                          289                             ; 0 .. 6 = reserved
+                          290     ;
+                          291     ; PLLCTRL: PLL Operation Control (PLLCON.13 .. PLLCON.14)
+ 0003                     292     _PLLCTRL  EQU    3      ; 0 = Bypass PLL clock mult., the VCO is off
+                          293                             ; 1 = Bypass PLL clock mult., the VCO is running
+                          294                             ; 2 = VCO clock used, input clock switched off
+                          295                             ; 3 = VCO clock used, input clock connected
+                          296     ;
+                          297     ; PLLWRI: PLLCON Write Ignore Flag (PLLCON.15)
+ 0000                     298     _PLLWRI   EQU    0      ; 0 = Register PLLCON may be written
+                          299                             ; 1 = Write cycles to register PLLCON are ignored
+                          300     ;
+                          301     ;
+                          302     ; Definitions for Watchdog Timer Control Register WDTCON
+                          303     ; ======================================================
+                          304     ;
+                          305     ; --- Set WATCHDOG = 1 to enable the Hardware watchdog and initilize the WDTCON regist
+                                  er
+                          306     $SET (WATCHDOG = 0)     ; 0 = Disabled Hardware watchdog
+                          307     ;
+                          308     ; WDTIN: Watchdog Timer Input Frequency Select (WDTCON.0 .. WDTCON.1)
+ 0001                     309     _WDTIN    EQU    1      ; 0 = frequency f_peripheral / 2   (CPU default)  
+                          310                             ; 1 = frequency f_peripheral / 128 (recommended for START_V2)
+                          311                             ; 2 = frequency f_peripheral / 4
+                          312                             ; 3 = frequency f_peripheral / 256
+                          313     ;
+                          314     ; WDTREL: Watchdog Timer Reload Value (WDTCON8 .. WDTCON15)
+ 0000                     315     _WDTREL   EQU    0      ; high byte of WDT (counts up, overflow gives Watchdog reset)
+                          316     ;
+                          317     ;
+                          318     ; Definitions for Frequency Output Signal FOCON
+                          319     ; =============================================
+                          320     ;
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE     6
+
+                          321     ; INIT_FOCON: Init FOCON register
+                          322     ; --- Set INIT_FOCON = 1 to initilize the FOCON register
+                          323     $SET (INIT_FOCON = 1)
+                          324     ;
+                          325     ; CLKEN: CLKOUT Enable (FOCON.7)
+ 0001                     326     _CLKEN    EQU     1     ; 0 = P3.15 is IO pin when _FOUT is 0
+                          327                             ; 1 = P3.15 outputs signal CLKOUT
+                          328     ;
+                          329     ; FORV: Frequency Output Reload Value (FOCON.8 .. FOCON.13)
+ 0000                     330     _FORV     EQU     0     ; is copied to FOCNT upon each underflow of FOCNT
+                          331     ;
+                          332     ; FOSS: Frequency Output Signal Select (FOCON.14)
+ 0000                     333     _FOSS     EQU     0     ; 0 = Output of the toggle latch; 0.5 duty cycle
+                          334                             ; 1 = Output of reload counter; duty cycle depends on FORV
+                          335     ;
+                          336     ; FOEN: Frequency Output Enable (FOCON.15)
+ 0000                     337     _FOEN     EQU     0     ; 0 = P3.15 is IO pin when _CLKEN is 0
+                          338                             ; 1 = P3.15 outputs f_OUT when _CLKEN is 0
+                          339     ;
+                          340     ;
+                          341     ; ============= CONFIGURE EXTERNAL BUS (EBC) BEHAVIOUR =====================
+                          342     ;
+                          343     ; --- Set CONFIG_EBC = 1 to initialize the EBCMOD0/EBCMOD1 registers
+                          344     $SET (CONFIG_EBC = 1)   ; 0 = EBCMOD0/EBCMOD1 are set during reset according the 
+                          345                             ;     of configuration bus (typical Port0) values.
+                          346                             ; 1 = the following external bus configuration values
+                          347                             ;      are written to EBCMOD and BUSACT0
+                          348     ;
+                          349     ; Definitions for EBC Mode 0 register EBCMOD0
+                          350     ; ===========================================
+                          351     ;
+                          352     ; SAPEN: Segment Address Pins Enabled (EBCMOD0.0 .. EBCMOD0.3)
+ 0008                     353     _SAPEN      EQU    8    ; 0 = No segment address pins enabled
+                          354                             ; 1 = One (A16) segment address pin enabled
+                          355                             ; : = :        
+                          356                             ; 8 = Eight (A16 .. A23) address pins enabled
+                          357                             ; 9 - 15 = reserved
+                          358     ;
+                          359     ; CSPEN: CSx Pins Enabled (EBCMOD0.4 .. EBCMOD0.7)
+ 0005                     360     _CSPEN      EQU    5    ; 0 = No CS pins enabled
+                          361                             ; 1 = One CS (CS0) pin enabled
+                          362                             ; : = :
+                          363                             ; 8 = Eight CS (CS0 .. CS7) pins enabled
+                          364                             ; 9 - 15 = reserved
+                          365     ; Note: the number of available CS pins depends on the chip used
+                          366     ;
+                          367     ; ARBEN: Bus Arbitration Pins Enabled (EBCMOD0.8)
+ 0000                     368     _ARBEN      EQU    0    ; 0 = HOLD, HLDA and BREQ pins are tristate or act as GPIO
+                          369                             ; 1 = HOLD, HLDA and BREQ pins act normally
+                          370     ;
+                          371     ; SLAVE: SLAVE mode enable (EBCMOD0.9)
+ 0000                     372     _SLAVE      EQU    0    ; 0 = Bus arbiter acts in master mode
+                          373                             ; 1 = Bus arbiter acts in slave mode
+                          374     ;
+                          375     ; EBCDIS: EBC pins disable (EBCMOD0.10)
+ 0000                     376     _EBCDIS     EQU    0    ; 0 = EBC is using the pins for external bus
+                          377                             ; 1 = EBC off (pins to be used as GPIO if implemented)
+                          378     ;
+                          379     ; WRCFG: Configuration for pins WR/WRL and BHE/WRH (EBCMOD0.11)
+ 0000                     380     _WRCFG      EQU    0    ; 0 = Pins act as WR and BHE
+                          381                             ; 1 = Pins act as WRL and WRH
+                          382     ;
+                          383     ; BYTDIS: BHE pin disable (EBCMOD0.12)
+ 0000                     384     _BYTDIS     EQU    0    ; 0 = BHE enabled
+                          385                             ; 1 = BHE disabled (GPIO function if implemented)
+                          386     ;
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE     7
+
+                          387     ; ALEDIS: ALE pin disable (EBCMOD0.13)
+ 0000                     388     _ALEDIS     EQU    0    ; 0 = ALE pin enabled
+                          389                             ; 1 = ALE pin disabled (GPIO function if implemented)
+                          390     ;
+                          391     ; RDYDIS: READY pin disable (EBCMOD0.14)
+ 0000                     392     _RDYDIS     EQU    0    ; 0 = READY enabled
+                          393                             ; 1 = READY disabled (GPIO function if implemented)
+                          394     ;
+                          395     ; RDYPOL: READY pin polarity (EBCMOD0.15)
+ 0000                     396     _RDYPOL     EQU    0    ; 0 = READY pin is active low
+                          397                             ; 1 = READY pin is active high
+                          398     ;
+                          399     ;
+                          400     ;
+                          401     ; Definitions for EBC Mode 1 register EBCMOD1
+                          402     ; ===========================================
+                          403     ;
+                          404     ; APDIS: Address Port Pins Disable (EBCMOD1.0 .. EBCMOD0.4)
+ 0000                     405     _APDIS     EQU    0     ; 0  = Address port PORT1 used as address bus
+                          406                             ; 1 - 30 = reserved
+                          407                             ; 31 = Address bus disabled (PORT1 used as GPIO)
+                          408     ;
+                          409     ; DHPDIS: Data High Port Pins Disable (EBCMOD1.6)
+ 0000                     410     _DHPDIS    EQU    0     ; 0 = Data bus pins 15-8 of PORT0 enabled
+                          411                             ; 1 = Data bus pins 15-8 disabled (used as GPIO)
+                          412     ;
+                          413     ;
+                          414     ;
+                          415     ; ========== CONFIGURE EXTERNAL BUS BEHAVIOUR FOR CS0 AREA ===========
+                          416     ;
+                          417     ; --- Set CONFIG_CS0 = 1 to initialize the FCONCS0/TCONCS0 registers
+                          418     $SET (CONFIG_CS0 = 1)
+                          419     ;
+                          420     ; Definitions for Function Configuration Register FCONCS0
+                          421     ; =======================================================
+                          422     ;
+                          423     ; ENCS0: Enable Chip Select (FCONCS0.0)
+ 0001                     424     _ENCS0     EQU    1     ; 0 = Chip Select 0 disabled
+                          425                             ; 1 = Chip Select 0 enabled
+                          426     ;
+                          427     ; RDYEN0: Ready Enable (FCONCS0.1)
+ 0000                     428     _RDYEN0    EQU    0     ; 0 = Access time controlled by TCONCS0.PHE0
+                          429                             ; 1 = Access time cont. by TCONCS0.PHE0 and READY signal
+                          430     ;
+                          431     ; RDYMOD0: Ready Mode (FCONCS0.2)
+ 0000                     432     _RDYMOD0   EQU    0     ; 0 = Asynchronous READY
+                          433                             ; 1 = Synchronous READY
+                          434     ;
+                          435     ; BTYP0: Bus Type Selection (FCONCS0.4 .. FCONCS0.5)
+ 0002                     436     _BTYP0     EQU    2     ; 0 = 8 bit Demultiplexed bus
+                          437                             ; 1 = 8 bit Multiplexed bus
+                          438                             ; 2 = 16 bit Demultiplexed bus
+                          439                             ; 3 = 16 bit Multiplexed bus
+                          440     ;
+                          441     ;
+                          442     ; TCONCS0: Definitions for the Timing Configuration register 
+                          443     ; ==========================================================
+                          444     ;
+                          445     ; PHA0: Phase A clock cycle (TCONCS0.0 .. TCONCS0.1)
+ 0000                     446     _PHA0       EQU    0    ; 0 = 0 clock cycles
+                          447                             ; : = : 
+                          448                             ; 3 = 3 clock cycles
+                          449     ;
+                          450     ; PHB0: Phase B clock cycle (TCONCS0.2)
+ 0000                     451     _PHB0       EQU    0    ; 0 = 1 clock cycle
+                          452                             ; 1 = 2 clock cycles
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE     8
+
+                          453     ;
+                          454     ; PHC0: Phase C clock cycle (TCONCS0.3 .. TCONCS0.4)
+ 0000                     455     _PHC0       EQU    0    ; 0 = 0 clock cycles
+                          456                             ; : = :
+                          457                             ; 3 = 3 clock cycles
+                          458     ;
+                          459     ; PHD0: Phase D clock cycle (TCONCS0.5)
+ 0000                     460     _PHD0       EQU    0    ; 0 = 0 clock cycles
+                          461                             ; 1 = 1 clock cycle
+                          462     ;
+                          463     ; PHE0: Phase E clock cycle (TCONCS0.6 .. TCONCS0.10)
+ 0001                     464     _PHE0       EQU    1    ; 0 = 1 clock cycle
+                          465                             ; : = :
+                          466                             ; 31 = 32 clock cycles
+                          467     ;
+                          468     ; RDPHF0: Phase F read clock cycle (TCONCS0.11 .. TCONCS0.12)
+ 0000                     469     _RDPHF0     EQU    0    ; 0 = 0 clock cycles
+                          470                             ; : = :
+                          471                             ; 3 = 3 clock cycles
+                          472     ;
+                          473     ; WRPHF0: Phase F write clock cycle (TCONCS0.13 .. TCONCS0.14)
+ 0000                     474     _WRPHF0     EQU    0    ; 0 = 0 clock cycles
+                          475                             ; : = :
+                          476                             ; 3 = 3 clock cycles
+                          477     ;
+                          478     ;
+                          479     ; ========== CONFIGURE EXTERNAL BUS BEHAVIOUR FOR CS1 AREA ===========
+                          480     ;
+                          481     ; --- Set CONFIG_CS1 = 1 to initialize the ADDRSEL1/FCONCS1/TCONCS1 registers
+                          482     $SET (CONFIG_CS1 = 1)
+                          483     ;
+                          484     ; Definitions for Address Select register ADDRSEL1  (externes SRAM auf phyCORE Modul)
+                          485     ; ===================================================================================
+                          486     ;
+ 00180000                 487     _ADDR1      EQU 0x180000     ; Set CS1# Start Address (default 100000H)
+                          488     ;
+ 00080000                 489     _SIZE1      EQU 512*KB         ; Set CS1# Size (default 1024*KB = 1*MB)
+                          490                                  ; possible values for _SIZE1 are:
+                          491                                  ;    4*KB            (gives RGSZ1 = 0)
+                          492                                  ;    8*KB            (gives RGSZ1 = 1)
+                          493                                  ;   16*KB            (gives RGSZ1 = 2)
+                          494                                  ;   32*KB            (gives RGSZ1 = 3)
+                          495                                  ;   64*KB            (gives RGSZ1 = 4)
+                          496                                  ;  128*KB            (gives RGSZ1 = 5)
+                          497                                  ;  256*KB            (gives RGSZ1 = 6)
+                          498                                  ;  512*KB            (gives RGSZ1 = 7)
+                          499                                  ; 1024*KB  or  1*MB  (gives RGSZ1 = 8)
+                          500                                  ; 2048*KB  or  2*MB  (gives RGSZ1 = 9)
+                          501                                  ; 4096*KB  or  4*MB  (gives RGSZ1 = 10)
+                          502                                  ; 8192*KB  or  8*MB  (gives RGSZ1 = 11)
+                          503                                  ;                    (RGSZ1 = 12 .. 15 reserved)
+                          504     ;
+                          505     ; Definitions for Function Configuration Register FCONCS1
+                          506     ; =======================================================
+                          507     ;
+                          508     ; ENCS1: Enable Chip Select (FCONCS1.0)
+ 0001                     509     _ENCS1     EQU    1     ; 0 = Chip Select 0 disabled
+                          510                             ; 1 = Chip Select 0 enabled
+                          511     ;
+                          512     ; RDYEN1: Ready Enable (FCONCS1.1)
+ 0000                     513     _RDYEN1    EQU    0     ; 0 = Access time controlled by TCONCS1.PHE1
+                          514                             ; 1 = Access time cont. by TCONCS1.PHE1 and READY signal
+                          515     ;
+                          516     ; RDYMOD1: Ready Mode (FCONCS1.2)
+ 0000                     517     _RDYMOD1   EQU    0     ; 0 = Asynchronous READY
+                          518                             ; 1 = Synchronous READY
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE     9
+
+                          519     ;
+                          520     ; BTYP1: Bus Type Selection (FCONCS1.4 .. FCONCS1.5)
+ 0002                     521     _BTYP1     EQU    2     ; 0 = 8 bit Demultiplexed bus
+                          522                             ; 1 = 8 bit Multiplexed bus
+                          523                             ; 2 = 16 bit Demultiplexed bus
+                          524                             ; 3 = 16 bit Multiplexed bus
+                          525     ;
+                          526     ;
+                          527     ; TCONCS1: Definitions for the Timing Configuration register 
+                          528     ; ==========================================================
+                          529     ;
+                          530     ; PHA1: Phase A clock cycle (TCONCS1.0 .. TCONCS1.1)
+ 0000                     531     _PHA1       EQU    0    ; 0 = 0 clock cycles
+                          532                             ; : = : 
+                          533                             ; 3 = 3 clock cycles
+                          534     ;
+                          535     ; PHB1: Phase B clock cycle (TCONCS1.2)
+ 0000                     536     _PHB1       EQU    0    ; 0 = 1 clock cycle
+                          537                             ; 1 = 2 clock cycles
+                          538     ;
+                          539     ; PHC1: Phase C clock cycle (TCONCS1.3 .. TCONCS1.4)
+ 0000                     540     _PHC1       EQU    0    ; 0 = 0 clock cycles
+                          541                             ; : = :
+                          542                             ; 3 = 3 clock cycles
+                          543     ;
+                          544     ; PHD1: Phase D clock cycle (TCONCS1.5)
+ 0000                     545     _PHD1       EQU    0    ; 0 = 0 clock cycles
+                          546                             ; 1 = 1 clock cycle
+                          547     ;
+                          548     ; PHE1: Phase E clock cycle (TCONCS1.6 .. TCONCS1.10)
+ 0001                     549     _PHE1       EQU    1    ; 0 = 1 clock cycle
+                          550                             ; : = :
+                          551                             ; 31 = 32 clock cycles
+                          552     ;
+                          553     ; RDPHF1: Phase F read clock cycle (TCONCS1.11 .. TCONCS1.12)
+ 0000                     554     _RDPHF1     EQU    0    ; 0 = 0 clock cycles
+                          555                             ; : = :
+                          556                             ; 3 = 3 clock cycles
+                          557     ;
+                          558     ; WRPHF1: Phase F write clock cycle (TCONCS1.13 .. TCONCS1.14)
+ 0000                     559     _WRPHF1     EQU    0    ; 0 = 0 clock cycles
+                          560                             ; : = :
+                          561                             ; 3 = 3 clock cycles
+                          562     ;
+                          563     ;
+                          564     ;
+                          565     ; ========== CONFIGURE EXTERNAL BUS BEHAVIOUR FOR CS2 AREA ===========
+                          566     ;
+                          567     ; --- Set CONFIG_CS2 = 1 to initialize the ADDRSEL2/FCONCS2/TCONCS2 registers
+                          568     $SET (CONFIG_CS2 = 0)
+                          569     ;
+                          570     ; Definitions for Address Select register ADDRSEL2
+                          571     ; ================================================
+                          572     ;
+ 00200000                 573     _ADDR2      EQU 0x200000     ; Set CS2# Start Address (default 200000H)
+                          574     ;
+ 00100000                 575     _SIZE2      EQU 1*MB         ; Set CS2# Size (default 1024*KB = 1*MB)
+                          576                                  ; possible values for _SIZE2 are:
+                          577                                  ;    4*KB            (gives RGSZ1 = 0)
+                          578                                  ;    8*KB            (gives RGSZ1 = 1)
+                          579                                  ;   16*KB            (gives RGSZ1 = 2)
+                          580                                  ;   32*KB            (gives RGSZ1 = 3)
+                          581                                  ;   64*KB            (gives RGSZ1 = 4)
+                          582                                  ;  128*KB            (gives RGSZ1 = 5)
+                          583                                  ;  256*KB            (gives RGSZ1 = 6)
+                          584                                  ;  512*KB            (gives RGSZ1 = 7)
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    10
+
+                          585                                  ; 1024*KB  or  1*MB  (gives RGSZ1 = 8)
+                          586                                  ; 2048*KB  or  2*MB  (gives RGSZ1 = 9)
+                          587                                  ; 4096*KB  or  4*MB  (gives RGSZ1 = 10)
+                          588                                  ; 8192*KB  or  8*MB  (gives RGSZ1 = 11)
+                          589                                  ;                    (RGSZ1 = 12 .. 15 reserved)
+                          590     ;
+                          591     ; Definitions for Function Configuration Register FCONCS2
+                          592     ; =======================================================
+                          593     ;
+                          594     ; ENCS2: Enable Chip Select (FCONCS2.0)
+ 0001                     595     _ENCS2     EQU    1     ; 0 = Chip Select 0 disabled
+                          596                             ; 1 = Chip Select 0 enabled
+                          597     ;
+                          598     ; RDYEN2: Ready Enable (FCONCS2.1)
+ 0000                     599     _RDYEN2    EQU    0     ; 0 = Access time controlled by TCONCS2.PHE2
+                          600                             ; 1 = Access time cont. by TCONCS2.PHE2 and READY signal
+                          601     ;
+                          602     ; RDYMOD2: Ready Mode (FCONCS2.2)
+ 0000                     603     _RDYMOD2   EQU    0     ; 0 = Asynchronous READY
+                          604                             ; 1 = Synchronous READY
+                          605     ;
+                          606     ; BTYP2: Bus Type Selection (FCONCS2.4 .. FCONCS2.5)
+ 0002                     607     _BTYP2     EQU    2     ; 0 = 8 bit Demultiplexed bus
+                          608                             ; 1 = 8 bit Multiplexed bus
+                          609                             ; 2 = 16 bit Demultiplexed bus
+                          610                             ; 3 = 16 bit Multiplexed bus
+                          611     ;
+                          612     ;
+                          613     ; TCONCS2: Definitions for the Timing Configuration register 
+                          614     ; ==========================================================
+                          615     ;
+                          616     ; PHA2: Phase A clock cycle (TCONCS2.0 .. TCONCS2.1)
+ 0003                     617     _PHA2       EQU    3    ; 0 = 0 clock cycles
+                          618                             ; : = : 
+                          619                             ; 3 = 3 clock cycles
+                          620     ;
+                          621     ; PHB2: Phase B clock cycle (TCONCS2.2)
+ 0000                     622     _PHB2       EQU    0    ; 0 = 1 clock cycle
+                          623                             ; 1 = 2 clock cycles
+                          624     ;
+                          625     ; PHC2: Phase C clock cycle (TCONCS2.3 .. TCONCS2.4)
+ 0000                     626     _PHC2       EQU    0    ; 0 = 0 clock cycles
+                          627                             ; : = :
+                          628                             ; 3 = 3 clock cycles
+                          629     ;
+                          630     ; PHD2: Phase D clock cycle (TCONCS2.5)
+ 0000                     631     _PHD2       EQU    0    ; 0 = 0 clock cycles
+                          632                             ; 1 = 1 clock cycle
+                          633     ;
+                          634     ; PHE2: Phase E clock cycle (TCONCS2.6 .. TCONCS2.10)
+ 0009                     635     _PHE2       EQU    9    ; 0 = 1 clock cycle
+                          636                             ; : = :
+                          637                             ; 31 = 32 clock cycles
+                          638     ;
+                          639     ; RDPHF2: Phase F read clock cycle (TCONCS2.11 .. TCONCS2.12)
+ 0000                     640     _RDPHF2     EQU    0    ; 0 = 0 clock cycles
+                          641                             ; : = :
+                          642                             ; 3 = 3 clock cycles
+                          643     ;
+                          644     ; WRPHF2: Phase F write clock cycle (TCONCS2.13 .. TCONCS2.14)
+ 0003                     645     _WRPHF2     EQU    3    ; 0 = 0 clock cycles
+                          646                             ; : = :
+                          647                             ; 3 = 3 clock cycles
+                          648     ;
+                          649     ;
+                          650     ;
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    11
+
+                          651     ; ========== CONFIGURE EXTERNAL BUS BEHAVIOUR FOR CS3 AREA ===========
+                          652     ;
+                          653     ; --- Set CONFIG_CS3 = 1 to initialize the ADDRSEL3/FCONCS3/TCONCS3 registers
+                          654     $SET (CONFIG_CS3 = 0)
+                          655     ;
+                          656     ; Definitions for Address Select register ADDRSEL3
+                          657     ; ================================================
+                          658     ;
+ 00300000                 659     _ADDR3      EQU 0x300000     ; Set CS3# Start Address (default 300000H)
+                          660     ;
+ 00100000                 661     _SIZE3      EQU 1*MB         ; Set CS3# Size (default 1024*KB = 1*MB)
+                          662                                  ; possible values for _SIZE3 are:
+                          663                                  ;    4*KB            (gives RGSZ1 = 0)
+                          664                                  ;    8*KB            (gives RGSZ1 = 1)
+                          665                                  ;   16*KB            (gives RGSZ1 = 2)
+                          666                                  ;   32*KB            (gives RGSZ1 = 3)
+                          667                                  ;   64*KB            (gives RGSZ1 = 4)
+                          668                                  ;  128*KB            (gives RGSZ1 = 5)
+                          669                                  ;  256*KB            (gives RGSZ1 = 6)
+                          670                                  ;  512*KB            (gives RGSZ1 = 7)
+                          671                                  ; 1024*KB  or  1*MB  (gives RGSZ1 = 8)
+                          672                                  ; 2048*KB  or  2*MB  (gives RGSZ1 = 9)
+                          673                                  ; 4096*KB  or  4*MB  (gives RGSZ1 = 10)
+                          674                                  ; 8192*KB  or  8*MB  (gives RGSZ1 = 11)
+                          675                                  ;                    (RGSZ1 = 12 .. 15 reserved)
+                          676     ;
+                          677     ; Definitions for Function Configuration Register FCONCS3
+                          678     ; =======================================================
+                          679     ;
+                          680     ; ENCS3: Enable Chip Select (FCONCS3.0)
+ 0001                     681     _ENCS3     EQU    1     ; 0 = Chip Select 0 disabled
+                          682                             ; 1 = Chip Select 0 enabled
+                          683     ;
+                          684     ; RDYEN3: Ready Enable (FCONCS3.1)
+ 0000                     685     _RDYEN3    EQU    0     ; 0 = Access time controlled by TCONCS3.PHE3
+                          686                             ; 1 = Access time cont. by TCONCS3.PHE3 and READY signal
+                          687     ;
+                          688     ; RDYMOD3: Ready Mode (FCONCS3.2)
+ 0000                     689     _RDYMOD3   EQU    0     ; 0 = Asynchronous READY
+                          690                             ; 1 = Synchronous READY
+                          691     ;
+                          692     ; BTYP3: Bus Type Selection (FCONCS3.4 .. FCONCS3.5)
+ 0002                     693     _BTYP3     EQU    2     ; 0 = 8 bit Demultiplexed bus
+                          694                             ; 1 = 8 bit Multiplexed bus
+                          695                             ; 2 = 16 bit Demultiplexed bus
+                          696                             ; 3 = 16 bit Multiplexed bus
+                          697     ;
+                          698     ;
+                          699     ; TCONCS3: Definitions for the Timing Configuration register 
+                          700     ; ==========================================================
+                          701     ;
+                          702     ; PHA3: Phase A clock cycle (TCONCS3.0 .. TCONCS3.1)
+ 0003                     703     _PHA3       EQU    3    ; 0 = 0 clock cycles
+                          704                             ; : = : 
+                          705                             ; 3 = 3 clock cycles
+                          706     ;
+                          707     ; PHB3: Phase B clock cycle (TCONCS3.2)
+ 0000                     708     _PHB3       EQU    0    ; 0 = 1 clock cycle
+                          709                             ; 1 = 2 clock cycles
+                          710     ;
+                          711     ; PHC3: Phase C clock cycle (TCONCS3.3 .. TCONCS3.4)
+ 0000                     712     _PHC3       EQU    0    ; 0 = 0 clock cycles
+                          713                             ; : = :
+                          714                             ; 3 = 3 clock cycles
+                          715     ;
+                          716     ; PHD3: Phase D clock cycle (TCONCS3.5)
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    12
+
+ 0000                     717     _PHD3       EQU    0    ; 0 = 0 clock cycles
+                          718                             ; 1 = 1 clock cycle
+                          719     ;
+                          720     ; PHE3: Phase E clock cycle (TCONCS3.6 .. TCONCS3.10)
+ 0009                     721     _PHE3       EQU    9    ; 0 = 1 clock cycle
+                          722                             ; : = :
+                          723                             ; 31 = 32 clock cycles
+                          724     ;
+                          725     ; RDPHF3: Phase F read clock cycle (TCONCS3.11 .. TCONCS3.12)
+ 0000                     726     _RDPHF3     EQU    0    ; 0 = 0 clock cycles
+                          727                             ; : = :
+                          728                             ; 3 = 3 clock cycles
+                          729     ;
+                          730     ; WRPHF3: Phase F write clock cycle (TCONCS3.13 .. TCONCS3.14)
+ 0003                     731     _WRPHF3     EQU    3    ; 0 = 0 clock cycles
+                          732                             ; : = :
+                          733                             ; 3 = 3 clock cycles
+                          734     ;
+                          735     ;
+                          736     ;
+                          737     ; ========== CONFIGURE EXTERNAL BUS BEHAVIOUR FOR CS4 AREA ===========
+                          738     ;
+                          739     ; --- Set CONFIG_CS4 = 1 to initialize the ADDRSEL4/FCONCS4/TCONCS4 registers
+                          740     $SET (CONFIG_CS4 = 1)
+                          741     ;
+                          742     ; Definitions for Address Select register ADDRSEL4
+                          743     ; ================================================
+                          744     ;
+ 00100000                 745     _ADDR4      EQU 0x100000     ; Set CS4# Start Address (default 400000H)
+                          746     ;
+ 1000                     747     _SIZE4      EQU 4*KB         ; Set CS4# Size (default 1024*KB = 1*MB)
+                          748                                  ; possible values for _SIZE4 are:
+                          749                                  ;    4*KB            (gives RGSZ1 = 0)
+                          750                                  ;    8*KB            (gives RGSZ1 = 1)
+                          751                                  ;   16*KB            (gives RGSZ1 = 2)
+                          752                                  ;   32*KB            (gives RGSZ1 = 3)
+                          753                                  ;   64*KB            (gives RGSZ1 = 4)
+                          754                                  ;  128*KB            (gives RGSZ1 = 5)
+                          755                                  ;  256*KB            (gives RGSZ1 = 6)
+                          756                                  ;  512*KB            (gives RGSZ1 = 7)
+                          757                                  ; 1024*KB  or  1*MB  (gives RGSZ1 = 8)
+                          758                                  ; 2048*KB  or  2*MB  (gives RGSZ1 = 9)
+                          759                                  ; 4096*KB  or  4*MB  (gives RGSZ1 = 10)
+                          760                                  ; 8192*KB  or  8*MB  (gives RGSZ1 = 11)
+                          761                                  ;                    (RGSZ1 = 12 .. 15 reserved)
+                          762     ;
+                          763     ; Definitions for Function Configuration Register FCONCS4
+                          764     ; =======================================================
+                          765     ;
+                          766     ; ENCS4: Enable Chip Select (FCONCS4.0)
+ 0001                     767     _ENCS4     EQU    1     ; 0 = Chip Select 0 disabled
+                          768                             ; 1 = Chip Select 0 enabled
+                          769     ;
+                          770     ; RDYEN4: Ready Enable (FCONCS4.1)
+ 0000                     771     _RDYEN4    EQU    0     ; 0 = Access time controlled by TCONCS4.PHE4
+                          772                             ; 1 = Access time cont. by TCONCS4.PHE4 and READY signal
+                          773     ;
+                          774     ; RDYMOD4: Ready Mode (FCONCS4.2)
+ 0000                     775     _RDYMOD4   EQU    0     ; 0 = Asynchronous READY
+                          776                             ; 1 = Synchronous READY
+                          777     ;
+                          778     ; BTYP4: Bus Type Selection (FCONCS4.4 .. FCONCS4.5)
+ 0002                     779     _BTYP4     EQU    2     ; 0 = 8 bit Demultiplexed bus
+                          780                             ; 1 = 8 bit Multiplexed bus
+                          781                             ; 2 = 16 bit Demultiplexed bus
+                          782                             ; 3 = 16 bit Multiplexed bus
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    13
+
+                          783     ;
+                          784     ;
+                          785     ; TCONCS4: Definitions for the Timing Configuration register 
+                          786     ; ==========================================================
+                          787     ;  Delay WR#-CA4 auf Expansion Board (nach drei NOR): ca. 7.2ns (WR# 0-1) und ca. 9.2n
+                                  s (WR# 1-0)
+                          788     ;  Delay CA4-IC2E auf MCPRIO Board(ein HCT-NAND 7400): ca. 8.8ns (IC2E 0-1) und 4.4ns 
+                                  (ICE2 1-0)
+                          789     ;  Delay NAND D-Q (Eingang zu Ausgang): ca. 10.0ns
+                          790     ;     PHA4 PHB4 PHC4 PHD4 PHE4 RDPHF4 WRPHF4
+                          791     ;       3    1    3    1    12     3      3    CS-Cycle: 550ns CS4#Low-WR# / CS4#Low-W
+                                  R#Low 150ns / WR#Low-CS4#High 75ns
+                          792     ;       1    1    1    1     2     1      1              200ns             /          
+                                        100ns /                 25ns
+                          793     ;       0    1    0    1     0     1      1    CS-Cycle: 125ns             /          
+                                         75ns /                 25ns
+                          794     ;     
+                          795     ;
+                          796     ; PHA4: Phase A clock cycle (TCONCS4.0 .. TCONCS4.1)
+ 0000                     797     _PHA4       EQU    0    ; 0 = 0 clock cycles  // some steppings have problems with PHA
+                                  4>0 and a following TWINCAN access
+                          798                             ; : = : 
+                          799                             ; 3 = 3 clock cycles
+                          800     ;
+                          801     ; PHB4: Phase B clock cycle (TCONCS4.2)
+ 0001                     802     _PHB4       EQU    1    ; 0 = 1 clock cycle
+                          803                             ; 1 = 2 clock cycles
+                          804     ;
+                          805     ; PHC4: Phase C clock cycle (TCONCS4.3 .. TCONCS4.4)           // ALE 1-0 delay to dat
+                                  a (WR-Cycle)
+ 0000                     806     _PHC4       EQU    0    ; 0 = 0 clock cycles
+                          807                             ; : = :
+                          808                             ; 3 = 3 clock cycles
+                          809     ;
+                          810     ; PHD4: Phase D clock cycle (TCONCS4.5)                        // determines Data -- W
+                                  R# High-Low delay
+ 0001                     811     _PHD4       EQU    1    ; 0 = 0 clock cycles
+                          812                             ; 1 = 1 clock cycle
+                          813     ;
+                          814     ; PHE4: Phase E clock cycle (TCONCS4.6 .. TCONCS4.10)          // determines duration 
+                                  of WR#-Low
+ 0000                     815     _PHE4       EQU    0    ; 0 = 1 clock cycle
+                          816                             ; : = :
+                          817                             ; 31 = 32 clock cycles
+                          818     ;
+                          819     ; RDPHF4: Phase F read clock cycle (TCONCS4.11 .. TCONCS4.12)  // wait time to tristat
+                                  e
+ 0001                     820     _RDPHF4     EQU    1    ; 0 = 0 clock cycles
+                          821                             ; : = :
+                          822                             ; 3 = 3 clock cycles
+                          823     ;
+                          824     ; WRPHF4: Phase F write clock cycle (TCONCS4.13 .. TCONCS4.14) // data hold time
+ 0001                     825     _WRPHF4     EQU    1    ; 0 = 0 clock cycles
+                          826                             ; : = :
+                          827                             ; 3 = 3 clock cycles
+                          828     ;
+                          829     ;
+                          830     ;
+                          831     ; ========== CONFIGURE EXTERNAL BUS BEHAVIOUR FOR CS5 AREA ===========
+                          832     ;
+                          833     ; --- Set CONFIG_CS5 = 1 to initialize the ADDRSEL5/FCONCS5/TCONCS5 registers
+                          834     $SET (CONFIG_CS5 = 0)
+                          835     ;
+                          836     ; Definitions for Address Select register ADDRSEL5
+                          837     ; ================================================
+                          838     ;
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    14
+
+ 00500000                 839     _ADDR5      EQU 0x500000     ; Set CS5# Start Address (default 500000H)
+                          840     ;
+ 00100000                 841     _SIZE5      EQU 1*MB         ; Set CS5# Size (default 1024*KB = 1*MB)
+                          842                                  ; possible values for _SIZE5 are:
+                          843                                  ;    4*KB            (gives RGSZ1 = 0)
+                          844                                  ;    8*KB            (gives RGSZ1 = 1)
+                          845                                  ;   16*KB            (gives RGSZ1 = 2)
+                          846                                  ;   32*KB            (gives RGSZ1 = 3)
+                          847                                  ;   64*KB            (gives RGSZ1 = 4)
+                          848                                  ;  128*KB            (gives RGSZ1 = 5)
+                          849                                  ;  256*KB            (gives RGSZ1 = 6)
+                          850                                  ;  512*KB            (gives RGSZ1 = 7)
+                          851                                  ; 1024*KB  or  1*MB  (gives RGSZ1 = 8)
+                          852                                  ; 2048*KB  or  2*MB  (gives RGSZ1 = 9)
+                          853                                  ; 4096*KB  or  4*MB  (gives RGSZ1 = 10)
+                          854                                  ; 8192*KB  or  8*MB  (gives RGSZ1 = 11)
+                          855                                  ;                    (RGSZ1 = 12 .. 15 reserved)
+                          856     ;
+                          857     ; Definitions for Function Configuration Register FCONCS5
+                          858     ; =======================================================
+                          859     ;
+                          860     ; ENCS5: Enable Chip Select (FCONCS5.0)
+ 0001                     861     _ENCS5     EQU    1     ; 0 = Chip Select 0 disabled
+                          862                             ; 1 = Chip Select 0 enabled
+                          863     ;
+                          864     ; RDYEN5: Ready Enable (FCONCS5.1)
+ 0000                     865     _RDYEN5    EQU    0     ; 0 = Access time controlled by TCONCS5.PHE5
+                          866                             ; 1 = Access time cont. by TCONCS5.PHE5 and READY signal
+                          867     ;
+                          868     ; RDYMOD5: Ready Mode (FCONCS5.2)
+ 0000                     869     _RDYMOD5   EQU    0     ; 0 = Asynchronous READY
+                          870                             ; 1 = Synchronous READY
+                          871     ;
+                          872     ; BTYP5: Bus Type Selection (FCONCS5.4 .. FCONCS5.5)
+ 0002                     873     _BTYP5     EQU    2     ; 0 = 8 bit Demultiplexed bus
+                          874                             ; 1 = 8 bit Multiplexed bus
+                          875                             ; 2 = 16 bit Demultiplexed bus
+                          876                             ; 3 = 16 bit Multiplexed bus
+                          877     ;
+                          878     ;
+                          879     ; TCONCS5: Definitions for the Timing Configuration register 
+                          880     ; ==========================================================
+                          881     ;
+                          882     ; PHA5: Phase A clock cycle (TCONCS5.0 .. TCONCS5.1)
+ 0003                     883     _PHA5       EQU    3    ; 0 = 0 clock cycles
+                          884                             ; : = : 
+                          885                             ; 3 = 3 clock cycles
+                          886     ;
+                          887     ; PHB5: Phase B clock cycle (TCONCS5.2)
+ 0000                     888     _PHB5       EQU    0    ; 0 = 1 clock cycle
+                          889                             ; 1 = 2 clock cycles
+                          890     ;
+                          891     ; PHC5: Phase C clock cycle (TCONCS5.3 .. TCONCS5.4)
+ 0000                     892     _PHC5       EQU    0    ; 0 = 0 clock cycles
+                          893                             ; : = :
+                          894                             ; 3 = 3 clock cycles
+                          895     ;
+                          896     ; PHD5: Phase D clock cycle (TCONCS5.5)
+ 0000                     897     _PHD5       EQU    0    ; 0 = 0 clock cycles
+                          898                             ; 1 = 1 clock cycle
+                          899     ;
+                          900     ; PHE5: Phase E clock cycle (TCONCS5.6 .. TCONCS5.10)
+ 0009                     901     _PHE5       EQU    9    ; 0 = 1 clock cycle
+                          902                             ; : = :
+                          903                             ; 31 = 32 clock cycles
+                          904     ;
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    15
+
+                          905     ; RDPHF5: Phase F read clock cycle (TCONCS5.11 .. TCONCS5.12)
+ 0000                     906     _RDPHF5     EQU    0    ; 0 = 0 clock cycles
+                          907                             ; : = :
+                          908                             ; 3 = 3 clock cycles
+                          909     ;
+                          910     ; WRPHF5: Phase F write clock cycle (TCONCS5.13 .. TCONCS5.14)
+ 0003                     911     _WRPHF5     EQU    3    ; 0 = 0 clock cycles
+                          912                             ; : = :
+                          913                             ; 3 = 3 clock cycles
+                          914     ;
+                          915     ;
+                          916     ;
+                          917     ; ========== CONFIGURE EXTERNAL BUS BEHAVIOUR FOR CS6 AREA ===========
+                          918     ;
+                          919     ; --- Set CONFIG_CS6 = 1 to initialize the ADDRSEL6/FCONCS6/TCONCS6 registers
+                          920     $SET (CONFIG_CS6 = 0)
+                          921     ;
+                          922     ; Definitions for Address Select register ADDRSEL6
+                          923     ; ================================================
+                          924     ;
+ 00600000                 925     _ADDR6      EQU 0x600000     ; Set CS6# Start Address (default 600000H)
+                          926     ;
+ 00100000                 927     _SIZE6      EQU 1*MB         ; Set CS6# Size (default 1024*KB = 1*MB)
+                          928                                  ; possible values for _SIZE6 are:
+                          929                                  ;    4*KB            (gives RGSZ1 = 0)
+                          930                                  ;    8*KB            (gives RGSZ1 = 1)
+                          931                                  ;   16*KB            (gives RGSZ1 = 2)
+                          932                                  ;   32*KB            (gives RGSZ1 = 3)
+                          933                                  ;   64*KB            (gives RGSZ1 = 4)
+                          934                                  ;  128*KB            (gives RGSZ1 = 5)
+                          935                                  ;  256*KB            (gives RGSZ1 = 6)
+                          936                                  ;  512*KB            (gives RGSZ1 = 7)
+                          937                                  ; 1024*KB  or  1*MB  (gives RGSZ1 = 8)
+                          938                                  ; 2048*KB  or  2*MB  (gives RGSZ1 = 9)
+                          939                                  ; 4096*KB  or  4*MB  (gives RGSZ1 = 10)
+                          940                                  ; 8192*KB  or  8*MB  (gives RGSZ1 = 11)
+                          941                                  ;                    (RGSZ1 = 12 .. 15 reserved)
+                          942     ;
+                          943     ; Definitions for Function Configuration Register FCONCS6
+                          944     ; =======================================================
+                          945     ;
+                          946     ; ENCS6: Enable Chip Select (FCONCS6.0)
+ 0001                     947     _ENCS6     EQU    1     ; 0 = Chip Select 0 disabled
+                          948                             ; 1 = Chip Select 0 enabled
+                          949     ;
+                          950     ; RDYEN6: Ready Enable (FCONCS6.1)
+ 0000                     951     _RDYEN6    EQU    0     ; 0 = Access time controlled by TCONCS6.PHE6
+                          952                             ; 1 = Access time cont. by TCONCS6.PHE6 and READY signal
+                          953     ;
+                          954     ; RDYMOD6: Ready Mode (FCONCS6.2)
+ 0000                     955     _RDYMOD6   EQU    0     ; 0 = Asynchronous READY
+                          956                             ; 1 = Synchronous READY
+                          957     ;
+                          958     ; BTYP6: Bus Type Selection (FCONCS6.4 .. FCONCS6.5)
+ 0002                     959     _BTYP6     EQU    2     ; 0 = 8 bit Demultiplexed bus
+                          960                             ; 1 = 8 bit Multiplexed bus
+                          961                             ; 2 = 16 bit Demultiplexed bus
+                          962                             ; 3 = 16 bit Multiplexed bus
+                          963     ;
+                          964     ;
+                          965     ; TCONCS6: Definitions for the Timing Configuration register 
+                          966     ; ==========================================================
+                          967     ;
+                          968     ; PHA6: Phase A clock cycle (TCONCS6.0 .. TCONCS6.1)
+ 0003                     969     _PHA6       EQU    3    ; 0 = 0 clock cycles
+                          970                             ; : = : 
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    16
+
+                          971                             ; 3 = 3 clock cycles
+                          972     ;
+                          973     ; PHB6: Phase B clock cycle (TCONCS6.2)
+ 0000                     974     _PHB6       EQU    0    ; 0 = 1 clock cycle
+                          975                             ; 1 = 2 clock cycles
+                          976     ;
+                          977     ; PHC6: Phase C clock cycle (TCONCS6.3 .. TCONCS6.4)
+ 0000                     978     _PHC6       EQU    0    ; 0 = 0 clock cycles
+                          979                             ; : = :
+                          980                             ; 3 = 3 clock cycles
+                          981     ;
+                          982     ; PHD6: Phase D clock cycle (TCONCS6.5)
+ 0000                     983     _PHD6       EQU    0    ; 0 = 0 clock cycles
+                          984                             ; 1 = 1 clock cycle
+                          985     ;
+                          986     ; PHE6: Phase E clock cycle (TCONCS6.6 .. TCONCS6.10)
+ 0009                     987     _PHE6       EQU    9    ; 0 = 1 clock cycle
+                          988                             ; : = :
+                          989                             ; 31 = 32 clock cycles
+                          990     ;
+                          991     ; RDPHF6: Phase F read clock cycle (TCONCS6.11 .. TCONCS6.12)
+ 0000                     992     _RDPHF6     EQU    0    ; 0 = 0 clock cycles
+                          993                             ; : = :
+                          994                             ; 3 = 3 clock cycles
+                          995     ;
+                          996     ; WRPHF6: Phase F write clock cycle (TCONCS6.13 .. TCONCS6.14)
+ 0003                     997     _WRPHF6     EQU    3    ; 0 = 0 clock cycles
+                          998                             ; : = :
+                          999                             ; 3 = 3 clock cycles
+                         1000     ;
+                         1001     ;
+                         1002     ;
+                         1003     ; ========== CONFIGURE EXTERNAL BUS BEHAVIOUR FOR CS7 AREA ===========
+                         1004     ;
+                         1005     ; --- Set CONFIG_CS7 = 1 to initialize the ADDRSEL7/FCONCS7/TCONCS7 registers
+                         1006     ; --- Note: The CS7# chip default at reset allows to access the on-chip Twin-CAN
+                         1007     $SET (CONFIG_CS7 = 0)
+                         1008     ;
+                         1009     ; Definitions for Address Select register ADDRSEL7
+                         1010     ; ================================================
+                         1011     ;
+ 00200000                1012     _ADDR7      EQU 0x200000     ; Set CS7# Start Address (default 200000H)
+                         1013     ;
+ 1000                    1014     _SIZE7      EQU 4*KB         ; Set CS7# Size (default 1024*KB = 1*MB)
+                         1015                                  ; possible values for _SIZE7 are:
+                         1016                                  ;    4*KB            (gives RGSZ1 = 0)
+                         1017                                  ;    8*KB            (gives RGSZ1 = 1)
+                         1018                                  ;   16*KB            (gives RGSZ1 = 2)
+                         1019                                  ;   32*KB            (gives RGSZ1 = 3)
+                         1020                                  ;   64*KB            (gives RGSZ1 = 4)
+                         1021                                  ;  128*KB            (gives RGSZ1 = 5)
+                         1022                                  ;  256*KB            (gives RGSZ1 = 6)
+                         1023                                  ;  512*KB            (gives RGSZ1 = 7)
+                         1024                                  ; 1024*KB  or  1*MB  (gives RGSZ1 = 8)
+                         1025                                  ; 2048*KB  or  2*MB  (gives RGSZ1 = 9)
+                         1026                                  ; 4096*KB  or  4*MB  (gives RGSZ1 = 10)
+                         1027                                  ; 8192*KB  or  8*MB  (gives RGSZ1 = 11)
+                         1028                                  ;                    (RGSZ1 = 12 .. 15 reserved)
+                         1029     ;
+                         1030     ; Definitions for Function Configuration Register FCONCS7
+                         1031     ; =======================================================
+                         1032     ;
+                         1033     ; ENCS7: Enable Chip Select (FCONCS7.0)
+ 0001                    1034     _ENCS7     EQU    1     ; 0 = Chip Select 0 disabled
+                         1035                             ; 1 = Chip Select 0 enabled
+                         1036     ;
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    17
+
+                         1037     ; RDYEN7: Ready Enable (FCONCS7.1)
+ 0001                    1038     _RDYEN7    EQU    1     ; 0 = Access time controlled by TCONCS7.PHE7
+                         1039                             ; 1 = Access time cont. by TCONCS7.PHE7 and READY signal
+                         1040     ;
+                         1041     ; RDYMOD7: Ready Mode (FCONCS7.2)
+ 0001                    1042     _RDYMOD7   EQU    1     ; 0 = Asynchronous READY
+                         1043                             ; 1 = Synchronous READY
+                         1044     ;
+                         1045     ; BTYP7: Bus Type Selection (FCONCS7.4 .. FCONCS7.5)
+ 0002                    1046     _BTYP7     EQU    2     ; 0 = 8 bit Demultiplexed bus
+                         1047                             ; 1 = 8 bit Multiplexed bus
+                         1048                             ; 2 = 16 bit Demultiplexed bus
+                         1049                             ; 3 = 16 bit Multiplexed bus
+                         1050     ;
+                         1051     ;
+                         1052     ; TCONCS7: Definitions for the Timing Configuration register 
+                         1053     ; ==========================================================
+                         1054     ;
+                         1055     ; PHA7: Phase A clock cycle (TCONCS7.0 .. TCONCS7.1)
+ 0000                    1056     _PHA7       EQU    0    ; 0 = 0 clock cycles
+                         1057                             ; : = : 
+                         1058                             ; 3 = 3 clock cycles
+                         1059     ;
+                         1060     ; PHB7: Phase B clock cycle (TCONCS7.2)
+ 0000                    1061     _PHB7       EQU    0    ; 0 = 1 clock cycle
+                         1062                             ; 1 = 2 clock cycles
+                         1063     ;
+                         1064     ; PHC7: Phase C clock cycle (TCONCS7.3 .. TCONCS7.4)
+ 0000                    1065     _PHC7       EQU    0    ; 0 = 0 clock cycles
+                         1066                             ; : = :
+                         1067                             ; 3 = 3 clock cycles
+                         1068     ;
+                         1069     ; PHD7: Phase D clock cycle (TCONCS7.5)
+ 0000                    1070     _PHD7       EQU    0    ; 0 = 0 clock cycles
+                         1071                             ; 1 = 1 clock cycle
+                         1072     ;
+                         1073     ; PHE7: Phase E clock cycle (TCONCS7.6 .. TCONCS7.10)
+ 0000                    1074     _PHE7       EQU    0    ; 0 = 1 clock cycle
+                         1075                             ; : = :
+                         1076                             ; 31 = 32 clock cycles
+                         1077     ;
+                         1078     ; RDPHF7: Phase F read clock cycle (TCONCS7.11 .. TCONCS7.12)
+ 0000                    1079     _RDPHF7     EQU    0    ; 0 = 0 clock cycles
+                         1080                             ; : = :
+                         1081                             ; 3 = 3 clock cycles
+                         1082     ;
+                         1083     ; WRPHF7: Phase F write clock cycle (TCONCS7.13 .. TCONCS7.14)
+ 0000                    1084     _WRPHF7     EQU    0    ; 0 = 0 clock cycles
+                         1085                             ; : = :
+                         1086                             ; 3 = 3 clock cycles
+                         1087     ;
+                         1088     ;------------------------------------------------------------------------------
+                         1089     
+                         1090     
+                                  $IF TINY
+                                  $SET (DPPUSE = 0)
+                         1093     $ENDIF
+                         1094     
+                         1095     
+                         1096     
+                         1097     $IF NOT TINY
+                         1098     ASSUME  DPP3:SYSTEM
+                         1099     ASSUME  DPP2:NDATA
+                         1100     $ENDIF
+                         1101     
+                         1102     NAME    ?C_STARTUP
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    18
+
+                         1103     PUBLIC  ?C_STARTUP
+                         1104     PUBLIC  ?L?VECSC
+                         1105     
+ 0000                    1106     ?L?VECSC        EQU     _VECSC   ; Interrupt Vector Spacing for L166
+                         1107     
+                                  $IF MEDIUM OR LARGE OR HLARGE
+                                  Model   LIT     'FAR'
+                         1110     $ELSE
+                         1111     Model   LIT     'NEAR'
+                         1112     $ENDIF
+                         1113     
+                         1114     EXTRN   main:NEAR
+                         1115     
+                         1116     PUBLIC          ?C_USRSTKBOT
+                         1117     
+--------                 1118     ?C_USERSTACK    SECTION DATA PUBLIC 'NDATA'
+                         1119     $IF NOT TINY
+                         1120     NDATA           DGROUP  ?C_USERSTACK
+                         1121     $ENDIF
+                         1122     ?C_USRSTKBOT:
+00000000                 1123                     DS      USTSZ           ; Size of User Stack
+                         1124     ?C_USERSTKTOP:
+--------                 1125     ?C_USERSTACK    ENDS
+                         1126     
+                         1127     ?C_MAINREGISTERS        REGDEF  R0 - R15
+                         1128     
+--------                 1129     ?C_SYSSTACK     SECTION DATA PUBLIC 'IDATA'
+                         1130     $IF NOT TINY
+                         1131     SDATA           DGROUP  ?C_SYSSTACK
+                         1132     $ENDIF
+                         1133     _BOS:                                   ; bottom of system stack
+00000000                 1134                     DS      SSTSZ           ; Size of User Stack
+                         1135     _TOS:                                   ; top of system stack
+--------                 1136     ?C_SYSSTACK     ENDS
+                         1137     
+                         1138     
+                         1139     PUBLIC          ?C_SYSSTKBOT
+                         1140     PUBLIC          ?C_SYSSTKTOP
+                         1141     
+ 0000                    1142     ?C_SYSSTKBOT    EQU     _BOS
+ 0200                    1143     ?C_SYSSTKTOP    EQU     _TOS
+                         1144     
+                         1145                     SSKDEF  7               ; unlimited System stack size
+                         1146     
+--------                 1147     ?C_STARTUP_CODE SECTION CODE    'ICODE'
+                         1148     
+                         1149     
+                         1150     ;------------------------------------------------------------------------------
+                         1151     
+                         1152     ; Special Function Register Addresses
+ EE1E                    1153     ADDRSEL1 EQU    0EE1EH
+ EE26                    1154     ADDRSEL2 EQU    0EE26H
+ EE2E                    1155     ADDRSEL3 EQU    0EE2EH
+ EE36                    1156     ADDRSEL4 EQU    0EE36H
+ EE3E                    1157     ADDRSEL5 EQU    0EE3EH
+ EE46                    1158     ADDRSEL6 EQU    0EE46H
+ EE4E                    1159     ADDRSEL7 EQU    0EE4EH
+ FE18                    1160     CPUCON1  DEFR   0FE18H
+ FE1A                    1161     CPUCON2  DEFR   0FE1AH
+ EE00                    1162     EBCMOD0  EQU    0EE00H
+ EE02                    1163     EBCMOD1  EQU    0EE02H
+ FFAA                    1164     FOCON    DEFR   0FFAAH
+ EE12                    1165     FCONCS0  EQU    0EE12H
+ EE1A                    1166     FCONCS1  EQU    0EE1AH
+ EE22                    1167     FCONCS2  EQU    0EE22H
+ EE2A                    1168     FCONCS3  EQU    0EE2AH
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    19
+
+ EE32                    1169     FCONCS4  EQU    0EE32H
+ EE3A                    1170     FCONCS5  EQU    0EE3AH
+ EE42                    1171     FCONCS6  EQU    0EE42H
+ EE4A                    1172     FCONCS7  EQU    0EE4AH
+ F1E0                    1173     RSTCON   EQU    0F1E0H
+ FE12                    1174     SP       DEFR   0FE12H
+ FF0C                    1175     SPSEG    DEFR   0FF0CH
+ FE14                    1176     STKOV    DEFR   0FE14H
+ FE16                    1177     STKUN    DEFR   0FE16H
+ F1DC                    1178     SYSCON1  DEFR   0F1DCH
+ F1D4                    1179     SYSCON3  DEFR   0F1D4H
+ F1D0                    1180     PLLCON   DEFR   0F1D0H
+ EE10                    1181     TCONCS0  EQU    0EE10H
+ EE18                    1182     TCONCS1  EQU    0EE18H
+ EE20                    1183     TCONCS2  EQU    0EE20H
+ EE28                    1184     TCONCS3  EQU    0EE28H
+ EE30                    1185     TCONCS4  EQU    0EE30H
+ EE38                    1186     TCONCS5  EQU    0EE38H
+ EE40                    1187     TCONCS6  EQU    0EE40H
+ EE48                    1188     TCONCS7  EQU    0EE48H
+ FFAE                    1189     WDTCON   DEFR   0FFAEH
+                         1190     
+                         1191     
+                         1192     ; Macro for calculation of ADDRSEL values -------------
+                         1193     
+                         1194     CALC_ADDRSEL     MACRO   sym, adr, size
+                         1195     IF     size <= (4*KB)
+                         1196     sym             EQU     ((adr >> 8) AND 0xFFF0) OR 0
+                         1197     ELSEIF size <= (8*KB)
+                         1198     sym             EQU     ((adr >> 8) AND 0xFFE0) OR 1
+                         1199     ELSEIF size <= (16*KB)
+                         1200     sym             EQU     ((adr >> 8) AND 0xFFC0) OR 2
+                         1201     ELSEIF size <= (32*KB)
+                         1202     sym             EQU     ((adr >> 8) AND 0xFF80) OR 3
+                         1203     ELSEIF size <= (64*KB)
+                         1204     sym             EQU     ((adr >> 8) AND 0xFF00) OR 4
+                         1205     ELSEIF size <= (128*KB)
+                         1206     sym             EQU     ((adr >> 8) AND 0xFE00) OR 5
+                         1207     ELSEIF size <= (256*KB)
+                         1208     sym             EQU     ((adr >> 8) AND 0xFC00) OR 6
+                         1209     ELSEIF size <= (512*KB)
+                         1210     sym             EQU     ((adr >> 8) AND 0xF800) OR 7
+                         1211     ELSEIF size <= (1*MB)
+                         1212     sym             EQU     ((adr >> 8) AND 0xF000) OR 8
+                         1213     ELSEIF size <= (2*MB)
+                         1214     sym             EQU     ((adr >> 8) AND 0xE000) OR 9
+                         1215     ELSEIF size <= (4*MB)
+                         1216     sym             EQU     ((adr >> 8) AND 0xC000) OR 10
+                         1217     ELSEIF size <= (8*MB)
+                         1218     sym             EQU     ((adr >> 8) AND 0x8000) OR 11
+                         1219     ENDIF
+                         1220                     ENDM
+                         1221     ; -----------------------------------------------------
+                         1222     
+                         1223     ?C_RESET        PROC TASK C_STARTUP INTNO RESET = 0
+                         1224     ?C_STARTUP:     LABEL   NEAR
+                         1225     
+                         1226     $IF (WATCHDOG = 0)
+00000000 A55AA5A5        1227                     DISWDT                  ; Disable watchdog timer
+                                  $ELSE 
+                                  _WDTCON         SET     (_WDTREL << 8) OR (_WDTIN)
+                                                  MOV     WDTCON,#_WDTCON ; Set WDTCON register
+                                                  SRVWDT                  ; Enable watchdog
+                         1232     $ENDIF
+                         1233     
+                         1234                                             ; Set CPUCON1 register
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    20
+
+ 0000                    1235     _CPC1           SET     (_VECSC<<5) OR (_WDTCTL<<4) OR (_SGTDIS<<3) 
+ 0000                    1236     _CPC1           SET     _CPC1 OR (_INTSCXT<<2) OR (_BP<<1) OR (_ZCJ)
+00000004 E60C0000        1237                     MOV     CPUCON1,#_CPC1
+                         1238     
+                                  $IF (INIT_CPUCON2 = 1)                  ; Set CPUCON2 register
+                                  _CPC2           SET     (_RETST<<3) OR (_FASTBL<<2) OR (_FASTPEC<<1) OR (_SL)
+                                  _CPC2           SET     _CPC2 OR (_EIOIAEN<<7) OR (_STEN<<6) OR (_ZSC<<5) OR (_OVRUN<<
+                                  4)
+                                  _CPC2           SET     _CPC2 OR (_BYPPF<<9) OR (_BYPF<<8) 
+                                  _CPC2           SET     _CPC2 OR (_FIFODEPTH<<12) OR (_FIFOFED<<10) 
+                                                  MOV     CPUCON2,#_CPC2
+                         1245     $ENDIF
+                         1246     
+                                  $IF (INIT_SYSCON1 = 1)                  ; Set SYSCON1 register
+                                  _SYSC1          SET     (_CPSYS<<8) OR (_PFCFG<<4) OR (_PDCFG<<2) OR (_SLEEPCON)
+                                                  EXTR    #01H            ; Extended SFR access
+                                                  MOV     SYSCON1,#_SYSC1         
+                         1251     $ENDIF
+                         1252     
+                         1253     $IF (INIT_SYSCON3 = 1)                  ; Set SYSCON3 register
+ 0000                    1254     _SYSC3          SET     ADCDIS OR (ASC0DIS << 1)  OR (SSC0DIS << 2)  OR (GPTDIS << 3)
+ 0000                    1255     _SYSC3          SET     _SYSC3 OR (FMDIS << 5)    OR (CC1DIS << 6)   OR (CC2DIS << 7)
+ 0000                    1256     _SYSC3          SET     _SYSC3 OR (CC6DIS << 8)   OR (ASC1DIS << 10) OR (I2CDIS << 11)
+ 0000                    1257     _SYSC3          SET     _SYSC3 OR (SDLMDIS << 12) OR (CANDIS  << 13) OR (SSC1DIS<< 15)
+00000008 D180            1258                     EXTR    #1
+0000000A E6EA0000        1259                     MOV     SYSCON3,#_SYSC3
+                         1260     $ENDIF
+                         1261     
+                         1262     $IF (CONFIG_EBC = 1)                    ; Set EBCMOD0 register
+ 0058                    1263     _EBC0           SET     (_SLAVE<<9) OR (_ARBEN<<8) OR (_CSPEN<<4) OR (_SAPEN)
+ 0058                    1264     _EBC0           SET     _EBC0 OR (_BYTDIS<<12) OR (_WRCFG<<11)  OR (_EBCDIS<<10) 
+ 0058                    1265     _EBC0           SET     _EBC0 OR (_RDYPOL<<15) OR (_RDYDIS<<14) OR (_ALEDIS<<13)
+0000000E E6F05800        1266                     MOV     R0,#_EBC0
+00000012 F6F000EE        1267                     MOV     EBCMOD0,R0
+                         1268     
+                         1269                                             ; Set EBCMOD1 register
+ 0000                    1270     _EBC1           SET  (_DHPDIS<<6) OR (_APDIS)
+00000016 E000            1271                     MOV     R0,#_EBC1
+00000018 F6F002EE        1272                     MOV     EBCMOD1,R0
+                         1273     $ENDIF
+                         1274     
+                         1275     $IF (CONFIG_CS0)  
+                         1276                                             ; Set TCONCS0 register
+ 0000                    1277     _TCS0           SET     (_PHD0<<5) OR (_PHC0<<3) OR (_PHB0<<2) OR (_PHA0)
+ 0040                    1278     _TCS0           SET     _TCS0 OR (_WRPHF0<<13) OR (_RDPHF0<<11) OR (_PHE0<<6)
+0000001C E6F04000        1279                     MOV     R0,#_TCS0
+00000020 F6F010EE        1280                     MOV     TCONCS0,R0
+                         1281                                             ; Set FCONCS0 register
+ 0021                    1282     _FCS0  SET  (_BTYP0<<4) OR (_RDYMOD0<<2) OR (_RDYEN0<<1) OR (_ENCS0)
+00000024 E6F02100        1283                     MOV     R0,#_FCS0
+00000028 F6F012EE        1284                     MOV     FCONCS0,R0
+                         1285     $ENDIF
+                         1286     
+                         1287     $IF (CONFIG_CS1)  
+                         1288                                             ; Set TCONCS1 register
+ 0000                    1289     _TCS1           SET     (_PHD1<<5) OR (_PHC1<<3) OR (_PHB1<<2) OR (_PHA1)
+ 0040                    1290     _TCS1           SET     _TCS1 OR (_WRPHF1<<13) OR (_RDPHF1<<11) OR (_PHE1<<6)
+0000002C E6F04000        1291                     MOV     R0,#_TCS1
+00000030 F6F018EE        1292                     MOV     TCONCS1,R0
+                         1293                                             ; Set ADDRSEL1 register
+                         1294     CALC_ADDRSEL    _ADDRSEL1, _ADDR1, _SIZE1
+00000034 E6F00718        1320                     MOV     R0,#_ADDRSEL1
+00000038 F6F01EEE        1321                     MOV     ADDRSEL1,R0
+                         1322                                             ; Set FCONCS1 register
+ 0021                    1323     _FCS1  SET  (_BTYP1<<4) OR (_RDYMOD1<<2) OR (_RDYEN1<<1) OR (_ENCS1)
+0000003C E6F02100        1324                     MOV     R0,#_FCS1
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    21
+
+00000040 F6F01AEE        1325                     MOV     FCONCS1,R0
+                         1326     
+                         1327     $ENDIF
+                         1328     
+                                  $IF (CONFIG_CS2)  
+                                                                          ; Set TCONCS2 register
+                                  _TCS2           SET     (_PHD2<<5) OR (_PHC2<<3) OR (_PHB2<<2) OR (_PHA2)
+                                  _TCS2           SET     _TCS2 OR (_WRPHF2<<13) OR (_RDPHF2<<11) OR (_PHE2<<6)
+                                                  MOV     R0,#_TCS2
+                                                  MOV     TCONCS2,R0
+                                                                          ; Set ADDRSEL2 register
+                                  CALC_ADDRSEL    _ADDRSEL2, _ADDR2, _SIZE2
+                                                  MOV     R0,#_ADDRSEL2
+                                                  MOV     ADDRSEL2,R0
+                                                                          ; Set FCONCS2 register
+                                  _FCS2  SET  (_BTYP2<<4) OR (_RDYMOD2<<2) OR (_RDYEN2<<1) OR (_ENCS2)
+                                                  MOV     R0,#_FCS2
+                                                  MOV     FCONCS2,R0
+                                  
+                         1344     $ENDIF
+                         1345     
+                                  $IF (CONFIG_CS3)  
+                                                                          ; Set TCONCS3 register
+                                  _TCS3           SET     (_PHD3<<5) OR (_PHC3<<3) OR (_PHB3<<2) OR (_PHA3)
+                                  _TCS3           SET     _TCS3 OR (_WRPHF3<<13) OR (_RDPHF3<<11) OR (_PHE3<<6)
+                                                  MOV     R0,#_TCS3
+                                                  MOV     TCONCS3,R0
+                                                                          ; Set ADDRSEL3 register
+                                  CALC_ADDRSEL    _ADDRSEL3, _ADDR3, _SIZE3
+                                                  MOV     R0,#_ADDRSEL3
+                                                  MOV     ADDRSEL3,R0
+                                                                          ; Set FCONCS3 register
+                                  _FCS3  SET  (_BTYP3<<4) OR (_RDYMOD3<<2) OR (_RDYEN3<<1) OR (_ENCS3)
+                                                  MOV     R0,#_FCS3
+                                                  MOV     FCONCS3,R0
+                                  
+                         1361     $ENDIF
+                         1362     
+                         1363     $IF (CONFIG_CS4)  
+                         1364                                             ; Set TCONCS4 register
+ 0024                    1365     _TCS4           SET     (_PHD4<<5) OR (_PHC4<<3) OR (_PHB4<<2) OR (_PHA4)
+ 2824                    1366     _TCS4           SET     _TCS4 OR (_WRPHF4<<13) OR (_RDPHF4<<11) OR (_PHE4<<6)
+00000044 E6F02428        1367                     MOV     R0,#_TCS4
+00000048 F6F030EE        1368                     MOV     TCONCS4,R0
+                         1369                                             ; Set ADDRSEL4 register
+                         1370     CALC_ADDRSEL    _ADDRSEL4, _ADDR4, _SIZE4
+0000004C E6F00010        1396                     MOV     R0,#_ADDRSEL4
+00000050 F6F036EE        1397                     MOV     ADDRSEL4,R0
+                         1398                                             ; Set FCONCS4 register
+ 0021                    1399     _FCS4  SET  (_BTYP4<<4) OR (_RDYMOD4<<2) OR (_RDYEN4<<1) OR (_ENCS4)
+00000054 E6F02100        1400                     MOV     R0,#_FCS4
+00000058 F6F032EE        1401                     MOV     FCONCS4,R0
+                         1402     
+                         1403     $ENDIF
+                         1404     
+                                  $IF (CONFIG_CS5)  
+                                                                          ; Set TCONCS5 register
+                                  _TCS5           SET     (_PHD5<<5) OR (_PHC5<<3) OR (_PHB5<<2) OR (_PHA5)
+                                  _TCS5           SET     _TCS5 OR (_WRPHF5<<13) OR (_RDPHF5<<11) OR (_PHE5<<6)
+                                                  MOV     R0,#_TCS5
+                                                  MOV     TCONCS5,R0
+                                                                          ; Set ADDRSEL5 register
+                                  CALC_ADDRSEL    _ADDRSEL5, _ADDR5, _SIZE5
+                                                  MOV     R0,#_ADDRSEL5
+                                                  MOV     ADDRSEL5,R0
+                                                                          ; Set FCONCS5 register
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    22
+
+                                  _FCS5  SET  (_BTYP5<<4) OR (_RDYMOD5<<2) OR (_RDYEN5<<1) OR (_ENCS5)
+                                                  MOV     R0,#_FCS5 
+                                                  MOV     FCONCS5,R0
+                                  
+                         1420     $ENDIF
+                         1421     
+                                  $IF (CONFIG_CS6)  
+                                                                          ; Set TCONCS6 register
+                                  _TCS6           SET     (_PHD6<<5) OR (_PHC6<<3) OR (_PHB6<<2) OR (_PHA6)
+                                  _TCS6           SET     _TCS6 OR (_WRPHF6<<13) OR (_RDPHF6<<11) OR (_PHE6<<6)
+                                                  MOV     R0,#_TCS6
+                                                  MOV     TCONCS6,R0
+                                                                          ; Set ADDRSEL6 register
+                                  CALC_ADDRSEL    _ADDRSEL6, _ADDR6, _SIZE6
+                                                  MOV     R0,#_ADDRSEL6
+                                                  MOV     ADDRSEL6,R0
+                                                                          ; Set FCONCS6 register
+                                  _FCS6  SET  (_BTYP6<<4) OR (_RDYMOD6<<2) OR (_RDYEN6<<1) OR (_ENCS6)
+                                                  MOV     R0,#_FCS6 
+                                                  MOV     FCONCS6,R0
+                                  
+                         1437     $ENDIF
+                         1438     
+                                  $IF (CONFIG_CS7)  
+                                                                          ; Set TCONCS7 register
+                                  _TCS7           SET     (_PHD7<<5) OR (_PHC7<<3) OR (_PHB7<<2) OR (_PHA7)
+                                  _TCS7           SET     _TCS7 OR (_WRPHF7<<13) OR (_RDPHF7<<11) OR (_PHE7<<6)
+                                                  MOV     R0,#_TCS7
+                                                  MOV     TCONCS7,R0
+                                                                          ; Set ADDRSEL7 register
+                                  CALC_ADDRSEL    _ADDRSEL7, _ADDR7, _SIZE7
+                                                  MOV     R0,#_ADDRSEL7
+                                                  MOV     ADDRSEL7,R0
+                                                                          ; Set FCONCS7 register
+                                  _FCS7  SET  (_BTYP7<<4) OR (_RDYMOD7<<2) OR (_RDYEN7<<1) OR (_ENCS7)
+                                                  MOV     R0,#_FCS7 
+                                                  MOV     FCONCS7,R0
+                                  
+                         1454     $ENDIF
+                         1455     
+                                  $IF (INIT_RSTCON = 1)                   ; Set RSTCON register
+                                  _RSTCON         SET     (_ROCOFF<<5) OR (_RORMV<<4) OR (_RSTLEN)
+                                  _RSTCON         SET     _RSTCON OR (_RODIS<<7) OR (_ROCON<<6)
+                                                  MOV     R0,#_RSTCON
+                                                  MOV     RSTCON,R0
+                         1461     $ENDIF
+                         1462     
+                         1463     $IF (INIT_PLLCON = 1)                   ; Set PLLCON register
+ 0054                    1464     _PLLCON         SET     (_PLLVB<<6) OR (_PLLIDIV<<4) OR (_PLLODIV)
+ 7854                    1465     _PLLCON         SET     _PLLCON OR (_PLLWRI<<15) OR (_PLLCTRL<<13) OR (_PLLMUL<<8)
+0000005C D180            1466                     EXTR    #01H            ; Extended SFR access
+0000005E E6E85478        1467                     MOV     PLLCON,#_PLLCON
+                         1468     $ENDIF
+                         1469     
+                         1470     $IF (INIT_FOCON = 1)                    ; Set FOCON register
+ 0080                    1471     _FOCON          SET (_CLKEN<<7) OR (_FORV<<8) OR (_FOSS<<14) OR (_FOEN<<15)
+00000062 E6D58000        1472                     MOV     FOCON,#_FOCON
+                         1473     $ENDIF
+                         1474     ;
+00000066 E60B???? R      1475                     MOV     STKUN,#SOF (_TOS)       ; INITIALIZE STACK UNFL REGISTER
+0000006A E60A???? R      1476                     MOV     STKOV,#SOF (_BOS+6*2)   ; INITIALIZE STACK OVFL REGISTER
+0000006E E609???? R      1477                     MOV     SP,#SOF (_TOS)          ; INITIALIZE STACK POINTER
+00000072 E686???? R      1478                     MOV     SPSEG,#SEG (_TOS)       ; INITIALIZE STACK POINTER SEGMENT
+                         1479     
+                         1480     $IF NOT TINY
+                         1481     
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    23
+
+                         1482                     EXTRN   ?C_PAGEDPP0 : DATA16
+                         1483                     EXTRN   ?C_PAGEDPP1 : DATA16
+                         1484                     EXTRN   ?C_PAGEDPP2 : DATA16
+                         1485     
+                         1486     $IF (DPPUSE = 1)
+00000076 E600???? E      1487                     MOV     DPP0,#?C_PAGEDPP0       ; INIT DPP0 VALUE
+                         1488     $ENDIF
+0000007A E601???? E      1489                     MOV     DPP1,#?C_PAGEDPP1       ; DEFAULT NEAR CONST PAGE
+0000007E E602???? E      1490                     MOV     DPP2,#?C_PAGEDPP2       ; DEFAULT NEAR DATA  PAGE
+                         1491     
+                         1492     $ENDIF
+                         1493     
+00000082 E608???? R      1494                     MOV     CP,#?C_MAINREGISTERS
+00000086 B54AB5B5        1495                     EINIT
+                         1496     
+0000008A E6F0???? R      1497                     MOV     R0,#?C_USERSTKTOP
+                         1498     
+                         1499     ;------------------------------------------------------------------------------
+                         1500     ;
+                         1501     ; The following code is necessary to set RAM variables to 0 at start-up
+                         1502     ; (RESET) of the C application program.
+                         1503     ;
+                         1504     
+                         1505     $IF (CLR_MEMORY = 1)
+                         1506     
+                         1507                     EXTRN   ?C_CLRMEMSECSTART : WORD
+                         1508     Clr_Memory:
+                                  $IF TINY
+                                                  MOV     R8,#?C_CLRMEMSECSTART
+                                                  JMPR    cc_Z,EndClear
+                                  
+                                  RepeatClear:
+                                  $IF (WATCHDOG = 1)
+                                                  SRVWDT                          ; SERVICE WATCHDOG
+                                  $ENDIF
+                                                  MOV     R5,#0
+                                                  MOV     R2,[R8+]    ; Count
+                                                  JMPR    cc_Z,EndClear
+                                                  MOV     R3,R2
+                                                  MOV     R4,[R8+]
+                                                  JBC     R2.14,ClearNear
+                                  
+                                  ClearBit:       MOV     R3,R4
+                                                  SHR     R3,#3
+                                                  BCLR    R3.0
+                                                  ADD     R3,#0FD00H              ; START OF BIT SPACE
+                                                  MOV     R5,#1
+                                                  SHL     R5,R4
+                                                  CPL     R5
+                                                  AND     R5,[R3]
+                                                  MOV     [R3],R5
+                                                  ADD     R4,#1
+                                                  SUB     R2,#1
+                                                  JMPR    cc_NZ,ClearBit
+                                                  JMPR    cc_UC,RepeatClear
+                                  
+                                  ClearNear:
+                                  $IF (WATCHDOG = 1)
+                                                  SRVWDT                          ; SERVICE WATCHDOG
+                                  $ENDIF
+                                                  MOVB    [R4],RL5
+                                                  ADD     R4,#1
+                                                  SUB     R2,#1
+                                                  JMPR    cc_NN,ClearNear
+                                                  JMPR    cc_UC,RepeatClear
+                                  
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    24
+
+                         1548     $ELSE
+0000008E E6F9???? E      1549                     MOV     R9,#SEG (?C_CLRMEMSECSTART)
+00000092 E6F8???? E      1550                     MOV     R8,#SOF (?C_CLRMEMSECSTART)
+00000096 F018            1551                     MOV     R1,R8           
+00000098 7019            1552                     OR      R1,R9
+0000009A 2D29            1553                     JMPR    cc_Z,EndClear
+                         1554     
+                         1555     RepeatClear:
+                                  $IF (WATCHDOG = 1)
+                                                  SRVWDT                          ; SERVICE WATCHDOG
+                         1558     $ENDIF
+0000009C E005            1559                     MOV     R5,#0
+0000009E DC09            1560                     EXTS    R9,#1
+000000A0 9828            1561                     MOV     R2,[R8+]    ; Count
+000000A2 2D25            1562                     JMPR    cc_Z,EndClear
+000000A4 F032            1563                     MOV     R3,R2
+000000A6 DC09            1564                     EXTS    R9,#1
+000000A8 9848            1565                     MOV     R4,[R8+]
+000000AA AAF21BE0        1566                     JBC     R2.14,ClearNear
+000000AE AAF20EF0        1567                     JBC     R2.15,ClearFar
+                         1568     
+000000B2 F034            1569     ClearBit:       MOV     R3,R4
+000000B4 7C33            1570                     SHR     R3,#3
+000000B6 0EF3            1571                     BCLR    R3.0
+000000B8 06F300FD        1572                     ADD     R3,#0FD00H              ; START OF BIT SPACE
+000000BC E015            1573                     MOV     R5,#1
+000000BE 4C54            1574                     SHL     R5,R4
+000000C0 9150            1575                     CPL     R5
+000000C2 685B            1576                     AND     R5,[R3]
+000000C4 B853            1577                     MOV     [R3],R5
+000000C6 0841            1578                     ADD     R4,#1
+000000C8 2821            1579                     SUB     R2,#1
+000000CA 3DF3            1580                     JMPR    cc_NZ,ClearBit
+000000CC 0DE7            1581                     JMPR    cc_UC,RepeatClear
+                         1582     
+000000CE DC09            1583     ClearFar:       EXTS    R9,#1
+000000D0 9838            1584                     MOV     R3,[R8+]
+                         1585     RepClearFar:
+                                  $IF (WATCHDOG = 1)
+                                                  SRVWDT                          ; SERVICE WATCHDOG
+                         1588     $ENDIF
+000000D2 DC44            1589                     EXTP    R4,#1
+000000D4 B9A3            1590                     MOVB    [R3],RL5
+000000D6 0831            1591                     ADD     R3,#1
+000000D8 1840            1592                     ADDC    R4,#0
+000000DA 76F300C0        1593                     OR      R3,#0C000H
+000000DE 2821            1594                     SUB     R2,#1
+000000E0 7DF8            1595                     JMPR    cc_NN,RepClearFar
+000000E2 0DDC            1596                     JMPR    cc_UC,RepeatClear
+                         1597     
+                         1598     ClearNear:
+                                  $IF (WATCHDOG = 1)
+                                                  SRVWDT                          ; SERVICE WATCHDOG
+                         1601     $ENDIF
+000000E4 B9A4            1602                     MOVB    [R4],RL5
+000000E6 0841            1603                     ADD     R4,#1
+000000E8 2821            1604                     SUB     R2,#1
+000000EA 7DFC            1605                     JMPR    cc_NN,ClearNear
+000000EC 0DD7            1606                     JMPR    cc_UC,RepeatClear
+                         1607     $ENDIF
+                         1608     
+                         1609     EndClear:
+                         1610     
+                         1611     $ENDIF
+                         1612     
+                         1613     ;------------------------------------------------------------------------------
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    25
+
+                         1614     ;
+                         1615     ;  The following code is necessary, if the application program contains
+                         1616     ;  initialized variables at file level.
+                         1617     ;
+                         1618     
+                         1619     $IF (INIT_VARS = 1) ; *********************************************************
+                         1620     
+                         1621                     EXTRN   ?C_INITSECSTART : WORD
+                         1622     Init_Vars:
+                                  $IF TINY ; ********************************************************************
+                                                  MOV     R8,#?C_INITSECSTART
+                                  RepeatInit:     
+                                  $IF (WATCHDOG = 1)
+                                                  SRVWDT                          ; SERVICE WATCHDOG
+                                  $ENDIF
+                                                  MOV     R2,[R8+]
+                                                  JMPR    cc_Z,EndInit
+                                                  JBC     R2.15,InitBit
+                                                  MOV     R4,R2
+                                                  AND     R2,#3FFFH
+                                                  JMPR    cc_NZ,LenLoad
+                                                  MOV     R4,#0
+                                                  MOV     R2,[R8+]
+                                  LenLoad:        MOV     R3,[R8+]
+                                  CopyInitVal:    MOVB    [R3],[R8+]
+                                  $IF (WATCHDOG = 1)
+                                                  SRVWDT                          ; SERVICE WATCHDOG
+                                  $ENDIF
+                                                  ADD     R3,#1
+                                                  SUB     R2,#1
+                                                  JMPR    cc_NZ,CopyInitVal
+                                                  JNB     R8.0,RepeatInit
+                                                  ADD     R8,#1
+                                                  JMPR    cc_UC,RepeatInit
+                                  
+                                  InitBit:        MOVBZ   R3,RL2
+                                                  SHL     R3,#1
+                                                  OR      R3,#0FD00H              ; START OF BIT SPACE
+                                                  MOV     R4,#1
+                                                  MOVB    RL5,RH2
+                                                  SHL     R4,R5                   ; CALCULATE BIT MASK
+                                                  JB      R2.7,SetBit
+                                                  CPL     R4                      ; CLEAR BIT
+                                                  AND     R4,[R3]
+                                                  JMPR    cc_UC,StoreBit
+                                  SetBit:         OR      R4,[R3]                 ; SET BIT
+                                  StoreBit:       MOV     [R3],R4
+                                                  JMPR    cc_UC,RepeatInit
+                                  
+                                  EndInit:
+                                  
+                         1665     $ELSE ; $IF TINY **************************************************************
+000000EE E6F9???? E      1666                     MOV     R9,#SEG (?C_INITSECSTART)
+000000F2 E6F8???? E      1667                     MOV     R8,#SOF (?C_INITSECSTART)
+                         1668     $IF (DPP3USE = 1) ; ***********************************************************
+                         1669     RepeatInit:     
+                                  $IF (WATCHDOG = 1)
+                                                  SRVWDT                          ; SERVICE WATCHDOG
+                         1672     $ENDIF
+000000F6 E6030300        1673                     MOV     DPP3,#3
+000000FA DC09            1674                     EXTS    R9,#1
+000000FC A828            1675                     MOV     R2,[R8]
+000000FE 2D3C            1676                     JMPR    cc_Z,EndInit
+00000100 0882            1677                     ADD     R8,#2
+00000102 1890            1678                     ADDC    R9,#0
+00000104 AAF229F0        1679                     JBC     R2.15,InitBit
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    26
+
+00000108 F042            1680                     MOV     R4,R2
+0000010A 66F2FF3F        1681                     AND     R2,#3FFFH
+0000010E 3D05            1682                     JMPR    cc_NZ,LenLoad
+00000110 E004            1683                     MOV     R4,#0
+00000112 DC09            1684                     EXTS    R9,#1
+00000114 A828            1685                     MOV     R2,[R8]
+00000116 0882            1686                     ADD     R8,#2
+00000118 1890            1687                     ADDC    R9,#0
+0000011A DC09            1688     LenLoad:        EXTS    R9,#1
+0000011C A838            1689                     MOV     R3,[R8]
+0000011E 0882            1690                     ADD     R8,#2
+00000120 1890            1691                     ADDC    R9,#0
+00000122 8AF406E0        1692                     JB      R4.14,CopyInitVal
+00000126 F6F306FE        1693                     MOV     DPP3,R3
+0000012A DC09            1694                     EXTS    R9,#1
+0000012C A838            1695                     MOV     R3,[R8]
+0000012E 0882            1696                     ADD     R8,#2
+00000130 1890            1697                     ADDC    R9,#0
+00000132 DC09            1698     CopyInitVal:    EXTS    R9,#1
+00000134 A9A8            1699                     MOVB    RL5,[R8]
+00000136 0881            1700                     ADD     R8,#1
+00000138 1890            1701                     ADDC    R9,#0
+0000013A B9A3            1702                     MOVB    [R3],RL5
+0000013C 0831            1703                     ADD     R3,#1
+0000013E 8AF406E0        1704                     JB      R4.14,NoDPP3Adj
+00000142 8AF304E0        1705                     JB      R3.14,NoDPP3Adj
+00000146 06030100        1706                     ADD     DPP3,#1
+0000014A 76F300C0        1707                     OR      R3,#0C000H              ; SET DPP3 Bits 
+                         1708     NoDPP3Adj:      
+                                  $IF (WATCHDOG = 1)
+                                                  SRVWDT                          ; SERVICE WATCHDOG
+                         1711     $ENDIF
+0000014E 2821            1712                     SUB     R2,#1
+00000150 3DF0            1713                     JMPR    cc_NZ,CopyInitVal
+00000152 9AF8D000        1714                     JNB     R8.0,RepeatInit
+00000156 0881            1715                     ADD     R8,#1
+00000158 0DCE            1716                     JMPR    cc_UC,RepeatInit
+                         1717     
+0000015A C043            1718     InitBit:        MOVBZ   R3,RL2
+0000015C 5C13            1719                     SHL     R3,#1
+0000015E 76F300FD        1720                     OR      R3,#0FD00H              ; START OF BIT SPACE
+00000162 E014            1721                     MOV     R4,#1
+00000164 F1A5            1722                     MOVB    RL5,RH2
+00000166 4C45            1723                     SHL     R4,R5                   ; CALCULATE BIT MASK
+00000168 8AF20370        1724                     JB      R2.7,SetBit
+0000016C 9140            1725                     CPL     R4                      ; CLEAR BIT
+0000016E 684B            1726                     AND     R4,[R3]
+00000170 0D01            1727                     JMPR    cc_UC,StoreBit
+00000172 784B            1728     SetBit:         OR      R4,[R3]                 ; SET BIT
+00000174 B843            1729     StoreBit:       MOV     [R3],R4
+00000176 0DBF            1730                     JMPR    cc_UC,RepeatInit
+                         1731     
+                                  $ELSE ; block IF (DPP3USE = 1) ************************************************
+                                  RepeatInit:       
+                                  $IF (WATCHDOG = 1)
+                                                  SRVWDT                          ; SERVICE WATCHDOG
+                                  $ENDIF
+                                                  EXTS    R9,#1
+                                                  MOV     R2,[R8]
+                                                  JMPR    cc_Z,EndInit
+                                                  ADD     R8,#2
+                                                  ADDC    R9,#0
+                                                  JBC     R2.15,InitBit
+                                                  MOV     R4,R2
+                                                  AND     R2,#3FFFH
+                                                  JMPR    cc_NZ,LenLoad
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    27
+
+                                                  MOV     R4,#0
+                                                  EXTS    R9,#1
+                                                  MOV     R2,[R8]
+                                                  ADD     R8,#2
+                                                  ADDC    R9,#0
+                                  LenLoad:        EXTS    R9,#1
+                                                  MOV     R3,[R8]
+                                                  ADD     R8,#2
+                                                  ADDC    R9,#0
+                                                  JB      R4.14,CopyNearVal
+                                                  MOV     R6,R3
+                                                  EXTS    R9,#1
+                                                  MOV     R3,[R8]
+                                                  ADD     R8,#2
+                                                  ADDC    R9,#0
+                                  CopyInitVal:    EXTS    R9,#1
+                                                  MOVB    RL5,[R8]
+                                                  ADD     R8,#1
+                                                  ADDC    R9,#0
+                                                  EXTP    R6,#1
+                                                  MOV     [R3],RL5
+                                                  ADD     R3,#1
+                                                  ADDC    R6,#0
+                                  $IF (WATCHDOG = 1)
+                                                  SRVWDT                          ; SERVICE WATCHDOG
+                                  $ENDIF
+                                                  SUB     R2,#1
+                                                  JMPR    cc_NZ,CopyInitVal
+                                                  JMPR    cc_UC,CopyInitDone
+                                  
+                                  
+                                  CopyNearVal:    EXTS    R9,#1
+                                                  MOVB    RL5,[R8]
+                                                  ADD     R8,#1
+                                                  ADDC    R9,#0
+                                                  MOVB    [R3],RL5
+                                                  ADD     R3,#1
+                                  $IF (WATCHDOG = 1)
+                                                  SRVWDT                          ; SERVICE WATCHDOG
+                                  $ENDIF
+                                                  SUB     R2,#1
+                                                  JMPR    cc_NZ,CopyNearVal
+                                  CopyInitDone:   JNB     R8.0,RepeatInit
+                                                  ADD     R8,#1
+                                                  JMPR    cc_UC,RepeatInit
+                                  
+                                  InitBit:        MOVBZ   R3,RL2
+                                                  SHL     R3,#1
+                                                  OR      R3,#0FD00H              ; START OF BIT SPACE
+                                                  MOV     R4,#1
+                                                  MOVB    RL5,RH2
+                                                  SHL     R4,R5                   ; CALCULATE BIT MASK
+                                                  JB      R2.7,SetBit
+                                                  CPL     R4                      ; CLEAR BIT
+                                                  AND     R4,[R3]
+                                                  JMPR    cc_UC,StoreBit
+                                  SetBit:         OR      R4,[R3]                 ; SET BIT
+                                  StoreBit:       MOV     [R3],R4
+                                                  JMPR    cc_UC,RepeatInit
+                         1805     $ENDIF ; close block IF (DPP3USE = 1) **************************************** 
+                         1806     
+                         1807     EndInit:
+                         1808     
+                         1809     $ENDIF ; close block $IF TINY ************************************************ 
+                         1810     
+                         1811     $ENDIF ; close $IF (INIT_VARS = 1) ******************************************* 
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    28
+
+                         1812     
+                         1813     ;------------------------------------------------------------------------------
+                         1814     
+                                  $IF TINY
+                                                  JMP     main
+                         1817     $ELSE
+00000178 FA?????? E      1818                     JMP     FAR main
+                         1819     $ENDIF
+                         1820     
+                         1821     ?C_RESET        ENDP
+--------                 1822     ?C_STARTUP_CODE ENDS
+                         1823     
+                         1824     $IF (INIT_VARS = 1)
+                         1825     EXTERN  ?C_ENDINIT:WORD
+                         1826     $ENDIF
+                         1827     
+                         1828     ;******************************************************************************
+                         1829     ;                                                                             *
+                         1830     ; STRUCTURE OF THE INITIALIZATION INFORMATION                                 *
+                         1831     ; -------------------------------------------                                 *
+                         1832     ; This section describes the initialization data generated by:                *
+                         1833     ;   - C166 for explicit variable initializations (in ?C_INITSEC)              *
+                         1834     ;   - L166 to clear memory regions (in ?C_CLRMEMSEC)                          *
+                         1835     ;                                                                             *
+                         1836     ; Explicit variable initilizations at C source level are stored by C166 in    *
+                         1837     ; the section ?C_INITSEC.  All partial sections are combined at linker level  *
+                         1838     ; to one section.  The section end value DW 0 taken from the library module   *
+                         1839     ; ?C_ENDINIT.  This module is included with the ?C_ENDINIT symbol definition. *
+                         1840     ;                                                                             *
+                         1841     ; Structure of the ?C_INITSEC information:                                    *
+                         1842     ;     ?C_INITSECSTART:   [start address label]                                *
+                         1843     ;     <typ> + <length>   [WORD]                       ----+  repeated         *
+                         1844     ;     <address>          [WORD or DWORD]              ----+  repeated         *
+                         1845     ;     <init_data>        [BYTES according to length]  ----+  repeated         *
+                         1846     ;     0x0000             [WORD]   <end of list mark>                          *
+                         1847     ; Whereby:                                                                    *
+                         1848     ;   <typ> :=  0x4000: WORD  near address field,                               *
+                         1849     ;             0x0000: DWORD PAG/POF address field (POF part set to DPP3)      *
+                         1850     ;             0x8080: set bit                                                 *
+                         1851     ;             0x8000: clear bit                                               *
+                         1852     ;   <init_data> :=    bytes to copy into memory specified by <address>        *
+                         1853     ;   For bit initilizations (<typ> = 0x80x0) the address is encoded in the     *
+                         1854     ;   <length> field and no further address information is generated.  MSB of   *
+                         1855     ;   <length> is the bit pos.  LSB of <length> is the bit address.             *
+                         1856     ;                                                                             *
+                         1857     ;                                                                             *
+                         1858     ; Sections that start with ?xx0? are set to zero in the startup code.  The    *
+                         1859     ; address information about these sections are stored by L166 in the section  *
+                         1860     ; ?C_CLRMEMSEC.                                                               *
+                         1861     ;                                                                             *
+                         1862     ; Structure of the ?C_CLRMERSEC information:                                  *
+                         1863     ;     ?C_CLRMEMSECSTART: [start address label]                                *
+                         1864     ;     <typ> + <length>   [WORD]                       ----+  repeated         *
+                         1865     ;     <address>          [WORD or DWORD]              ----+  repeated         *
+                         1866     ;     0x0000             [WORD]   <end of list mark>                          *
+                         1867     ; Whereby:                                                                    *
+                         1868     ;   <typ> :=  0x4000: WORD  near address field,                               *
+                         1869     ;             0x8000: DWORD PAG/POF address field (POF part set to DPP3)      *
+                         1870     ;             0x0000: bit area                                                *
+                         1871     ;   For bit areas (<typ> = 0x0000) the address is encoded as WORD with LSB    *
+                         1872     ;   as byte offset to 0xFD00 and MSB as bit number in the addressed byte.     *
+                         1873     ;                                                                             *
+                         1874     ;******************************************************************************
+                         1875     
+                         1876                     END
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    29
+
+SYMBOL TABLE LISTING
+------ ----- -------
+
+
+N A M E             TYPE   VALUE             I  ATTRIBUTES
+
+?C_CLRMEMSECSTART.  WORD   ----                 EXT 
+?C_ENDINIT . . . .  WORD   ----                 EXT 
+?C_INITSECSTART. .  WORD   ----                 EXT 
+?C_MAINREGISTERS .  RBANK                       REGBANK
+?C_PAGEDPP0. . . .  DATA16 ----                 EXT 
+?C_PAGEDPP1. . . .  DATA16 ----                 EXT 
+?C_PAGEDPP2. . . .  DATA16 ----                 EXT 
+?C_RESET . . . . .  I-FAR  0H                R  SEC=?C_STARTUP_CODE
+?C_STARTUP . . . .  NEAR   0H                R  PUB SEC=?C_STARTUP_CODE
+?C_STARTUP_CODE. .  ----   ----              R  SECTION
+?C_SYSSTACK. . . .  ----   ----              R  SECTION
+?C_SYSSTKBOT . . .  BYTE   0H                R  PUB SEC=?C_SYSSTACK
+?C_SYSSTKTOP . . .  BYTE   200H              R  PUB SEC=?C_SYSSTACK
+?C_USERSTACK . . .  ----   ----              R  SECTION
+?C_USERSTKTOP. . .  BYTE   1000H             R  SEC=?C_USERSTACK
+?C_USRSTKBOT . . .  BYTE   0H                R  PUB SEC=?C_USERSTACK
+?L?VECSC . . . . .  DATA3  0H                A  PUB 
+ADCDIS . . . . . .  DATA3  0H                A  
+ADDRSEL1 . . . . .  DATA16 EE1EH             A  
+ADDRSEL2 . . . . .  DATA16 EE26H             A  
+ADDRSEL3 . . . . .  DATA16 EE2EH             A  
+ADDRSEL4 . . . . .  DATA16 EE36H             A  
+ADDRSEL5 . . . . .  DATA16 EE3EH             A  
+ADDRSEL6 . . . . .  DATA16 EE46H             A  
+ADDRSEL7 . . . . .  DATA16 EE4EH             A  
+ASC0DIS. . . . . .  DATA3  0H                A  
+ASC1DIS. . . . . .  DATA3  0H                A  
+CANDIS . . . . . .  DATA3  0H                A  
+CC1DIS . . . . . .  DATA3  0H                A  
+CC2DIS . . . . . .  DATA3  0H                A  
+CC6DIS . . . . . .  DATA3  0H                A  
+CP . . . . . . . .  WORD   FE10H             A  SFR
+CPUCON1. . . . . .  WORD   FE18H             A  SFR
+CPUCON2. . . . . .  WORD   FE1AH             A  SFR
+C_STARTUP. . . . .  ----   ----                 
+ClearBit . . . . .  NEAR   B2H               R  SEC=?C_STARTUP_CODE
+ClearFar . . . . .  NEAR   CEH               R  SEC=?C_STARTUP_CODE
+ClearNear. . . . .  NEAR   E4H               R  SEC=?C_STARTUP_CODE
+Clr_Memory . . . .  NEAR   8EH               R  SEC=?C_STARTUP_CODE
+CopyInitVal. . . .  NEAR   132H              R  SEC=?C_STARTUP_CODE
+DPP0 . . . . . . .  WORD   FE00H             A  SFR
+DPP1 . . . . . . .  WORD   FE02H             A  SFR
+DPP2 . . . . . . .  WORD   FE04H             A  SFR
+DPP3 . . . . . . .  WORD   FE06H             A  SFR
+EBCMOD0. . . . . .  DATA16 EE00H             A  
+EBCMOD1. . . . . .  DATA16 EE02H             A  
+EndClear . . . . .  NEAR   EEH               R  SEC=?C_STARTUP_CODE
+EndInit. . . . . .  NEAR   178H              R  SEC=?C_STARTUP_CODE
+FCONCS0. . . . . .  DATA16 EE12H             A  
+FCONCS1. . . . . .  DATA16 EE1AH             A  
+FCONCS2. . . . . .  DATA16 EE22H             A  
+FCONCS3. . . . . .  DATA16 EE2AH             A  
+FCONCS4. . . . . .  DATA16 EE32H             A  
+FCONCS5. . . . . .  DATA16 EE3AH             A  
+FCONCS6. . . . . .  DATA16 EE42H             A  
+FCONCS7. . . . . .  DATA16 EE4AH             A  
+FMDIS. . . . . . .  DATA3  0H                A  
+FOCON. . . . . . .  WORD   FFAAH             A  SFR
+GPTDIS . . . . . .  DATA3  0H                A  
+I2CDIS . . . . . .  DATA3  0H                A  
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    30
+
+InitBit. . . . . .  NEAR   15AH              R  SEC=?C_STARTUP_CODE
+Init_Vars. . . . .  NEAR   EEH               R  SEC=?C_STARTUP_CODE
+KB . . . . . . . .  DATA16 400H              A  
+LenLoad. . . . . .  NEAR   11AH              R  SEC=?C_STARTUP_CODE
+MB . . . . . . . .  DATA32 100000H           A  
+Model. . . . . . .  LIT    "NEAR"               
+NDATA. . . . . . .  ----   ----                 GROUP
+NoDPP3Adj. . . . .  NEAR   14EH              R  SEC=?C_STARTUP_CODE
+PLLCON . . . . . .  WORD   F1D0H             A  ESFR
+RESET. . . . . . .  INTNO  0000H             A  GLB 
+RSTCON . . . . . .  DATA16 F1E0H             A  
+RepClearFar. . . .  NEAR   D2H               R  SEC=?C_STARTUP_CODE
+RepeatClear. . . .  NEAR   9CH               R  SEC=?C_STARTUP_CODE
+RepeatInit . . . .  NEAR   F6H               R  SEC=?C_STARTUP_CODE
+SDATA. . . . . . .  ----   ----                 GROUP
+SDLMDIS. . . . . .  DATA3  0H                A  
+SP . . . . . . . .  WORD   FE12H             A  SFR
+SPSEG. . . . . . .  WORD   FF0CH             A  SFR
+SSC0DIS. . . . . .  DATA3  0H                A  
+SSC1DIS. . . . . .  DATA3  0H                A  
+SSTSZ. . . . . . .  DATA16 200H              A  
+STKOV. . . . . . .  WORD   FE14H             A  SFR
+STKUN. . . . . . .  WORD   FE16H             A  SFR
+SYSCON1. . . . . .  WORD   F1DCH             A  ESFR
+SYSCON3. . . . . .  WORD   F1D4H             A  ESFR
+SetBit . . . . . .  NEAR   172H              R  SEC=?C_STARTUP_CODE
+StoreBit . . . . .  NEAR   174H              R  SEC=?C_STARTUP_CODE
+TCONCS0. . . . . .  DATA16 EE10H             A  
+TCONCS1. . . . . .  DATA16 EE18H             A  
+TCONCS2. . . . . .  DATA16 EE20H             A  
+TCONCS3. . . . . .  DATA16 EE28H             A  
+TCONCS4. . . . . .  DATA16 EE30H             A  
+TCONCS5. . . . . .  DATA16 EE38H             A  
+TCONCS6. . . . . .  DATA16 EE40H             A  
+TCONCS7. . . . . .  DATA16 EE48H             A  
+USTSZ. . . . . . .  DATA16 1000H             A  
+WDTCON . . . . . .  WORD   FFAEH             A  SFR
+_ADDR1 . . . . . .  DATA32 180000H           A  
+_ADDR2 . . . . . .  DATA32 200000H           A  
+_ADDR3 . . . . . .  DATA32 300000H           A  
+_ADDR4 . . . . . .  DATA32 100000H           A  
+_ADDR5 . . . . . .  DATA32 500000H           A  
+_ADDR6 . . . . . .  DATA32 600000H           A  
+_ADDR7 . . . . . .  DATA32 200000H           A  
+_ADDRSEL1. . . . .  DATA16 1807H             A  
+_ADDRSEL4. . . . .  DATA16 1000H             A  
+_ALEDIS. . . . . .  DATA3  0H                A  
+_APDIS . . . . . .  DATA3  0H                A  
+_ARBEN . . . . . .  DATA3  0H                A  
+_BOS . . . . . . .  BYTE   0H                R  SEC=?C_SYSSTACK
+_BP. . . . . . . .  DATA3  0H                A  
+_BTYP0 . . . . . .  DATA3  2H                A  
+_BTYP1 . . . . . .  DATA3  2H                A  
+_BTYP2 . . . . . .  DATA3  2H                A  
+_BTYP3 . . . . . .  DATA3  2H                A  
+_BTYP4 . . . . . .  DATA3  2H                A  
+_BTYP5 . . . . . .  DATA3  2H                A  
+_BTYP6 . . . . . .  DATA3  2H                A  
+_BTYP7 . . . . . .  DATA3  2H                A  
+_BYPF. . . . . . .  DATA3  0H                A  
+_BYPPF . . . . . .  DATA3  0H                A  
+_BYTDIS. . . . . .  DATA3  0H                A  
+_CLKEN . . . . . .  DATA3  1H                A  
+_CPC1. . . . . . .  DATA3  0H                A  
+_CPSYS . . . . . .  DATA3  0H                A  
+_CSPEN . . . . . .  DATA3  5H                A  
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    31
+
+_DHPDIS. . . . . .  DATA3  0H                A  
+_EBC0. . . . . . .  DATA8  58H               A  
+_EBC1. . . . . . .  DATA3  0H                A  
+_EBCDIS. . . . . .  DATA3  0H                A  
+_EIOIAEN . . . . .  DATA3  0H                A  
+_ENCS0 . . . . . .  DATA3  1H                A  
+_ENCS1 . . . . . .  DATA3  1H                A  
+_ENCS2 . . . . . .  DATA3  1H                A  
+_ENCS3 . . . . . .  DATA3  1H                A  
+_ENCS4 . . . . . .  DATA3  1H                A  
+_ENCS5 . . . . . .  DATA3  1H                A  
+_ENCS6 . . . . . .  DATA3  1H                A  
+_ENCS7 . . . . . .  DATA3  1H                A  
+_FASTBL. . . . . .  DATA3  0H                A  
+_FASTPEC . . . . .  DATA3  0H                A  
+_FCS0. . . . . . .  DATA8  21H               A  
+_FCS1. . . . . . .  DATA8  21H               A  
+_FCS4. . . . . . .  DATA8  21H               A  
+_FIFODEPTH . . . .  DATA3  0H                A  
+_FIFOFED . . . . .  DATA3  0H                A  
+_FOCON . . . . . .  DATA8  80H               A  
+_FOEN. . . . . . .  DATA3  0H                A  
+_FORV. . . . . . .  DATA3  0H                A  
+_FOSS. . . . . . .  DATA3  0H                A  
+_INTSCXT . . . . .  DATA3  0H                A  
+_OVRUN . . . . . .  DATA3  0H                A  
+_PDCFG . . . . . .  DATA3  0H                A  
+_PFCFG . . . . . .  DATA3  0H                A  
+_PHA0. . . . . . .  DATA3  0H                A  
+_PHA1. . . . . . .  DATA3  0H                A  
+_PHA2. . . . . . .  DATA3  3H                A  
+_PHA3. . . . . . .  DATA3  3H                A  
+_PHA4. . . . . . .  DATA3  0H                A  
+_PHA5. . . . . . .  DATA3  3H                A  
+_PHA6. . . . . . .  DATA3  3H                A  
+_PHA7. . . . . . .  DATA3  0H                A  
+_PHB0. . . . . . .  DATA3  0H                A  
+_PHB1. . . . . . .  DATA3  0H                A  
+_PHB2. . . . . . .  DATA3  0H                A  
+_PHB3. . . . . . .  DATA3  0H                A  
+_PHB4. . . . . . .  DATA3  1H                A  
+_PHB5. . . . . . .  DATA3  0H                A  
+_PHB6. . . . . . .  DATA3  0H                A  
+_PHB7. . . . . . .  DATA3  0H                A  
+_PHC0. . . . . . .  DATA3  0H                A  
+_PHC1. . . . . . .  DATA3  0H                A  
+_PHC2. . . . . . .  DATA3  0H                A  
+_PHC3. . . . . . .  DATA3  0H                A  
+_PHC4. . . . . . .  DATA3  0H                A  
+_PHC5. . . . . . .  DATA3  0H                A  
+_PHC6. . . . . . .  DATA3  0H                A  
+_PHC7. . . . . . .  DATA3  0H                A  
+_PHD0. . . . . . .  DATA3  0H                A  
+_PHD1. . . . . . .  DATA3  0H                A  
+_PHD2. . . . . . .  DATA3  0H                A  
+_PHD3. . . . . . .  DATA3  0H                A  
+_PHD4. . . . . . .  DATA3  1H                A  
+_PHD5. . . . . . .  DATA3  0H                A  
+_PHD6. . . . . . .  DATA3  0H                A  
+_PHD7. . . . . . .  DATA3  0H                A  
+_PHE0. . . . . . .  DATA3  1H                A  
+_PHE1. . . . . . .  DATA3  1H                A  
+_PHE2. . . . . . .  DATA4  9H                A  
+_PHE3. . . . . . .  DATA4  9H                A  
+_PHE4. . . . . . .  DATA3  0H                A  
+_PHE5. . . . . . .  DATA4  9H                A  
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    32
+
+_PHE6. . . . . . .  DATA4  9H                A  
+_PHE7. . . . . . .  DATA3  0H                A  
+_PLLCON. . . . . .  DATA16 7854H             A  
+_PLLCTRL . . . . .  DATA3  3H                A  
+_PLLIDIV . . . . .  DATA3  1H                A  
+_PLLMUL. . . . . .  DATA8  18H               A  
+_PLLODIV . . . . .  DATA3  4H                A  
+_PLLVB . . . . . .  DATA3  1H                A  
+_PLLWRI. . . . . .  DATA3  0H                A  
+_RDPHF0. . . . . .  DATA3  0H                A  
+_RDPHF1. . . . . .  DATA3  0H                A  
+_RDPHF2. . . . . .  DATA3  0H                A  
+_RDPHF3. . . . . .  DATA3  0H                A  
+_RDPHF4. . . . . .  DATA3  1H                A  
+_RDPHF5. . . . . .  DATA3  0H                A  
+_RDPHF6. . . . . .  DATA3  0H                A  
+_RDPHF7. . . . . .  DATA3  0H                A  
+_RDYDIS. . . . . .  DATA3  0H                A  
+_RDYEN0. . . . . .  DATA3  0H                A  
+_RDYEN1. . . . . .  DATA3  0H                A  
+_RDYEN2. . . . . .  DATA3  0H                A  
+_RDYEN3. . . . . .  DATA3  0H                A  
+_RDYEN4. . . . . .  DATA3  0H                A  
+_RDYEN5. . . . . .  DATA3  0H                A  
+_RDYEN6. . . . . .  DATA3  0H                A  
+_RDYEN7. . . . . .  DATA3  1H                A  
+_RDYMOD0 . . . . .  DATA3  0H                A  
+_RDYMOD1 . . . . .  DATA3  0H                A  
+_RDYMOD2 . . . . .  DATA3  0H                A  
+_RDYMOD3 . . . . .  DATA3  0H                A  
+_RDYMOD4 . . . . .  DATA3  0H                A  
+_RDYMOD5 . . . . .  DATA3  0H                A  
+_RDYMOD6 . . . . .  DATA3  0H                A  
+_RDYMOD7 . . . . .  DATA3  1H                A  
+_RDYPOL. . . . . .  DATA3  0H                A  
+_RETST . . . . . .  DATA3  0H                A  
+_ROCOFF. . . . . .  DATA3  0H                A  
+_ROCON . . . . . .  DATA3  0H                A  
+_RODIS . . . . . .  DATA3  0H                A  
+_RORMV . . . . . .  DATA3  0H                A  
+_RSTLEN. . . . . .  DATA3  0H                A  
+_SAPEN . . . . . .  DATA4  8H                A  
+_SGTDIS. . . . . .  DATA3  0H                A  
+_SIZE1 . . . . . .  DATA32 80000H            A  
+_SIZE2 . . . . . .  DATA32 100000H           A  
+_SIZE3 . . . . . .  DATA32 100000H           A  
+_SIZE4 . . . . . .  DATA16 1000H             A  
+_SIZE5 . . . . . .  DATA32 100000H           A  
+_SIZE6 . . . . . .  DATA32 100000H           A  
+_SIZE7 . . . . . .  DATA16 1000H             A  
+_SL. . . . . . . .  DATA3  0H                A  
+_SLAVE . . . . . .  DATA3  0H                A  
+_SLEEPCON. . . . .  DATA3  0H                A  
+_STEN. . . . . . .  DATA3  0H                A  
+_SYSC3 . . . . . .  DATA3  0H                A  
+_TCS0. . . . . . .  DATA8  40H               A  
+_TCS1. . . . . . .  DATA8  40H               A  
+_TCS4. . . . . . .  DATA16 2824H             A  
+_TOS . . . . . . .  BYTE   200H              R  SEC=?C_SYSSTACK
+_VECSC . . . . . .  DATA3  0H                A  
+_WDTCTL. . . . . .  DATA3  0H                A  
+_WDTIN . . . . . .  DATA3  1H                A  
+_WDTREL. . . . . .  DATA3  0H                A  
+_WRCFG . . . . . .  DATA3  0H                A  
+_WRPHF0. . . . . .  DATA3  0H                A  
+_WRPHF1. . . . . .  DATA3  0H                A  
+A166 MACRO ASSEMBLER  MCPR_XC_START_002                                                   11/18/2013 15:21:49 PAGE    33
+
+_WRPHF2. . . . . .  DATA3  3H                A  
+_WRPHF3. . . . . .  DATA3  3H                A  
+_WRPHF4. . . . . .  DATA3  1H                A  
+_WRPHF5. . . . . .  DATA3  3H                A  
+_WRPHF6. . . . . .  DATA3  3H                A  
+_WRPHF7. . . . . .  DATA3  0H                A  
+_ZCJ . . . . . . .  DATA3  0H                A  
+_ZSC . . . . . . .  DATA3  0H                A  
+main . . . . . . .  NEAR   ----                 EXT 
+
+
+
+ASSEMBLY COMPLETE.  0 WARNING(S), 0 ERROR(S)
