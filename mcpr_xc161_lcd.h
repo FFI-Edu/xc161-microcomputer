@@ -3,6 +3,7 @@
 
 #include <XC161.h>
 #include "Platform_types.h"
+#include "mcpr_xc161_timer.h"
 
 #define IC2 (*((uint8*) 0x100002))
 #define IC3 (*((uint8*) 0x100004))
@@ -10,6 +11,8 @@
 #define T_WAIT 6
 #define MIN_TEMP 18
 #define MAX_TEMP 25
+
+extern uint32 lcd_on_until;
 
 void lcd_init();
 
@@ -20,7 +23,7 @@ void lcd_write(uint8 data_type, uint8 data_byte);
 void lcd_setline(uint8 line);
 void lcd_sendstring(uint8 line, char* str);
 void lcd_sendall();
-void lcd_writestatus(uint16* cycle, uint16* temp);
+void lcd_writestatus(uint32 cycle, uint16 temp);
 
 void wait(uint16 ms);
 

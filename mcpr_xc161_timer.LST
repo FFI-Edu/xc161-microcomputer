@@ -1,0 +1,57 @@
+C166 COMPILER V7.53.0.0, MCPR_XC161_TIMER                                                  11/21/2013 17:02:41 PAGE 1   
+
+
+C166 COMPILER V7.53.0.0, COMPILATION OF MODULE MCPR_XC161_TIMER
+OBJECT MODULE PLACED IN mcpr_xc161_timer.OBJ
+COMPILER INVOKED BY: C:\Programme\Mikrocom\Keil\C166\BIN\C166.EXE mcpr_xc161_timer.c MODV2 COMPACT BROWSE MODV2 DEBUG TA
+                    -BS(2) 
+
+ stmt lvl     source
+
+    1         #include "mcpr_xc161_timer.h"
+    2         
+    3         uint32 timer_count = 0;
+    4         
+    5         void timer_init() {
+    6  1        // TIMER 6
+    7  1        GPT12E_CAPREL     = 0xF680;
+    8  1        GPT12E_T6CON_T6UD = 0; // Aufwärts
+    9  1        GPT12E_T6CON     |= 2; // Prescaler 16
+   10  1        GPT12E_T6CON_T6R  = 1; // An
+   11  1        GPT12E_T6CON_T6SR = 1; // Reload aktiv
+   12  1        GPT12E_T6IC_IE    = 1; // Interrupt Enable
+   13  1        GPT12E_T6IC      |= 8; // Mittlere Prio
+   14  1        // TIMER 3
+   15  1        GPT12E_CAPREL     = 0xF680;
+   16  1        GPT12E_T3CON_T3UD = 0; // Aufwärts
+   17  1        GPT12E_T3CON     |= 8; // Counter Modus
+   18  1        GPT12E_T3CON     |= 1; // T3I
+   19  1        GPT12E_T3CON_T3R  = 1; // An
+   20  1        GPT12E_T3IC_IE    = 1; // Interrupt Enable
+   21  1        GPT12E_T3IC      |= 8; // Mittlere Prio
+   22  1      }
+   23         
+   24         void t3_i() interrupt 0x26 {
+   25  1        timer_count++;
+   26  1      }
+
+
+MODULE INFORMATION:   INITIALIZED  UNINITIALIZED
+  CODE SIZE        =          54     --------
+  NEAR-CONST SIZE  =    --------     --------
+  FAR-CONST SIZE   =    --------     --------
+  HUGE-CONST SIZE  =    --------     --------
+  XHUGE-CONST SIZE =    --------     --------
+  NEAR-DATA SIZE   =           4     --------
+  FAR-DATA SIZE    =    --------     --------
+  XHUGE-DATA SIZE  =    --------     --------
+  IDATA-DATA SIZE  =    --------     --------
+  SDATA-DATA SIZE  =    --------     --------
+  BDATA-DATA SIZE  =    --------     --------
+  HUGE-DATA SIZE   =    --------     --------
+  BIT SIZE         =    --------     --------
+  INIT'L SIZE      =           8     --------
+END OF MODULE INFORMATION.
+
+
+C166 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

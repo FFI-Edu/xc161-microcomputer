@@ -1,6 +1,8 @@
 #include "mcpr_xc161_lcd.h"
 #include <string.h>
 
+uint32 lcd_on_until = 0;
+
 void lcd_init() {
    wait(40000); //40ms warten nach power on
    lcd_write(0x0, 0x30);
@@ -19,6 +21,21 @@ void lcd_init() {
 }
 
 void lcd_backlight_controller(uint16 ks, uint8* lkey_state_up, uint8* lkey_state_down, uint8* last_lcd){															
+   uint8 nkey_state_up   = ((uint8) ks);
+   uint8 nkey_state_down = ((uint8) (ks>>8));
+   if( nkey_state_up != *lkey_state_up || nkey_state_down != *lkey_state_down ){
+      lcd_on_until = timer_count+10000;
+   }
+   *lkey_state_up   = nkey_state_up;
+   *lkey_state_down = nkey_state_down;
+	 if( lcd_on_until > timer_count )
+		 lcd_backlight(1);
+	 else
+		 lcd_backlight(0);
+				
+}
+
+/*void lcd_backlight_controller(uint16 ks, uint8* lkey_state_up, uint8* lkey_state_down, uint8* last_lcd){															
    uint8 nkey_state_up   = ((uint8) ks);
    uint8 nkey_state_down = ((uint8) (ks>>8));
    if( nkey_state_up > *lkey_state_up ){
@@ -42,7 +59,7 @@ void lcd_backlight_controller(uint16 ks, uint8* lkey_state_up, uint8* lkey_state
    *lkey_state_up   = nkey_state_up;
    *lkey_state_down = nkey_state_down;
 				
-}
+}*/
 
 void lcd_backlight (uint8 state) {
    DP7   = 0x00F0;
@@ -88,16 +105,16 @@ void lcd_sendstring(uint8 line,  char* str) {
 				
 }
 
-void lcd_writestatus(uint16* cycle, uint16* temp){
+void lcd_writestatus(uint32 cycle, uint16 temp){
    char message[21];
    
-   sprintf (message, "Temp: %ld", *temp);
+   sprintf (message, "Temp: %d", temp);
    lcd_sendstring(0, message);
    
-   sprintf (message, "Frequenz: %ld", *cycle);
+   sprintf (message, "Freq: %ld", cycle);
    lcd_sendstring(1, message);
    
-   if( (*temp > MAX_TEMP || *temp < MIN_TEMP) )
+   if( (temp > MAX_TEMP || temp < MIN_TEMP) )
       sprintf (message, "WARNING: TEMP", 0x0);
    else
       sprintf (message, " ", 0x0);

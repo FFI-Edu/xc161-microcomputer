@@ -293,6 +293,11 @@
               <FileType>5</FileType>
               <FilePath>.\mcpr_xc161_lcd.h</FilePath>
             </File>
+            <File>
+              <FileName>mcpr_xc161_timer.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\mcpr_xc161_timer.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -312,6 +317,11 @@
               <FileName>mcpr_xc161_lcd.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\mcpr_xc161_lcd.c</FilePath>
+            </File>
+            <File>
+              <FileName>mcpr_xc161_timer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\mcpr_xc161_timer.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -610,6 +620,11 @@
               <FileType>5</FileType>
               <FilePath>.\mcpr_xc161_lcd.h</FilePath>
             </File>
+            <File>
+              <FileName>mcpr_xc161_timer.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\mcpr_xc161_timer.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -629,6 +644,11 @@
               <FileName>mcpr_xc161_lcd.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\mcpr_xc161_lcd.c</FilePath>
+            </File>
+            <File>
+              <FileName>mcpr_xc161_timer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\mcpr_xc161_timer.c</FilePath>
             </File>
           </Files>
         </Group>

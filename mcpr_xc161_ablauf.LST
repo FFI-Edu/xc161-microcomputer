@@ -1,20 +1,20 @@
-C166 COMPILER V7.53.0.0, MCPR_XC161_ABLAUF                                                 11/18/2013 15:21:49 PAGE 1   
+C166 COMPILER V7.53.0.0, MCPR_XC161_ABLAUF                                                 11/21/2013 17:02:41 PAGE 1   
 
 
 C166 COMPILER V7.53.0.0, COMPILATION OF MODULE MCPR_XC161_ABLAUF
 OBJECT MODULE PLACED IN mcpr_xc161_ablauf.OBJ
-COMPILER INVOKED BY: C:\Program Files (x86)\Keil\C166\BIN\C166.EXE mcpr_xc161_ablauf.c MODV2 COMPACT BROWSE MODV2 DEBUG 
-                    -TABS(2) 
+COMPILER INVOKED BY: C:\Programme\Mikrocom\Keil\C166\BIN\C166.EXE mcpr_xc161_ablauf.c MODV2 COMPACT BROWSE MODV2 DEBUG T
+                    -ABS(2) 
 
  stmt lvl     source
 
     1         #include <XC161.h>
     2         #include "Platform_types.h"
     3         #include "mcpr_xc161_lcd.h"
-    4         
-    5         void led_output (uint8 led);
-    6         uint16 read_keys();
-    7          
+    4         #include "mcpr_xc161_timer.h"
+    5         
+    6         void led_output (uint8 led);
+    7         uint16 read_keys();
     8          
     9                           /****************/
    10                           /*     main     */
@@ -29,43 +29,53 @@ COMPILER INVOKED BY: C:\Program Files (x86)\Keil\C166\BIN\C166.EXE mcpr_xc161_ab
    19  1         uint8 last_key_state_down = 0x00;
    20  1         uint8 last_lcd_set        = 0x00; //only last 2 bits important
    21  1              // ========
-   22  1         lcd_init();
-   23  1         while(1) { 
-   24  2            key_state = read_keys();
-   25  2            led_output(((uint8) key_state)  |  ((uint8) (key_state>>8)));
-   26  2            // LCD BL
-   27  2            lcd_backlight_controller(key_state, &last_key_state_up, &last_key_state_down, &last_lcd_set);
-   28  2            // LCD TEXT
-   29  2            lcd_writestatus(&cycles,&temperature);
-   30  2            cycles++;
-   31  2            if(cycles>60000)
-   32  2               cycles=0;
-   33  2         }
-   34  1      }
-   35          
-   36         void led_output (uint8 led) {
-   37  1         IC2 = led;
-   38  1      }
-   39          
-   40         uint16 read_keys() {
-   41  1         int i        =0, j=0;
-   42  1         uint16 state = 0;
-   43  1         DP7_P6  = 1;
-   44  1         P7_P6   = 0;
-   45  1         for(i=0; i<4; i++) {
-   46  2            IC3 = 1 << i;
-   47  2            for(j=0; j<100; j++);  //auf Transistoren warten
-   48  2            state = state<<4;
-   49  2            state |= ~(P5) & 0xF;
-   50  2         }  
-   51  1         return state;
-   52  1      }
+   22  1        uint32 timer_start         = 0;
+   23  1              // ========
+   24  1         PSW_IEN = 1;
+   25  1         lcd_init();
+   26  1         timer_init();
+   27  1              // ========
+   28  1         while(1) {
+   29  2            timer_start = timer_count;
+   30  2           
+   31  2            key_state = read_keys();
+   32  2            led_output(((uint8) key_state)  |  ((uint8) (key_state>>8)));
+   33  2            // LCD BL
+   34  2            lcd_backlight_controller(key_state, &last_key_state_up, &last_key_state_down, &last_lcd_set);
+   35  2            // LCD TEXT
+   36  2            lcd_writestatus(timer_count,temperature);
+   37  2            // FREQ 
+   38  2            cycles++;
+   39  2            if(cycles>60000)
+   40  2              cycles=0;
+   41  2            
+   42  2            while((timer_start + 50) > timer_count);
+   43  2         }
+   44  1      }
+   45          
+   46         void led_output (uint8 led) {
+   47  1         IC2 = led;
+   48  1      }
+   49          
+   50         uint16 read_keys() {
+   51  1         int i        =0, j=0;
+   52  1         uint16 state = 0;
+   53  1         DP7_P6  = 1;
+   54  1         P7_P6   = 0;
+C166 COMPILER V7.53.0.0, MCPR_XC161_ABLAUF                                                 11/21/2013 17:02:41 PAGE 2   
 
+   55  1         for(i=0; i<4; i++) {
+   56  2            IC3 = 1 << i;
+   57  2            for(j=0; j<100; j++);  //auf Transistoren warten
+   58  2            state = state<<4;
+   59  2            state |= ~(P5) & 0xF;
+   60  2         }  
+   61  1         return state;
+   62  1      }
 
-C166 COMPILER V7.53.0.0, MCPR_XC161_ABLAUF                                                 11/18/2013 15:21:49 PAGE 2   
 
 MODULE INFORMATION:   INITIALIZED  UNINITIALIZED
-  CODE SIZE        =         204     --------
+  CODE SIZE        =         236     --------
   NEAR-CONST SIZE  =    --------     --------
   FAR-CONST SIZE   =    --------     --------
   HUGE-CONST SIZE  =    --------     --------
