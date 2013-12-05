@@ -17,7 +17,7 @@ extern uint32 lcd_on_until;
 void lcd_init();
 
 void lcd_backlight (uint8 state);
-void lcd_backlight_controller( uint16 ks, uint8* lkey_state_up, uint8* lkey_state_down, uint8* last_lcd );
+void lcd_backlight_controller( uint16 ks, uint8* lkey_state_up, uint8* lkey_state_down/*, uint8* last_lcd*/ );
 
 void lcd_write(uint8 data_type, uint8 data_byte);
 void lcd_setline(uint8 line);

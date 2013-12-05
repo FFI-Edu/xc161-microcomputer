@@ -31,7 +31,7 @@
           <SLE66LinkerMisc></SLE66LinkerMisc>
           <SFDFile></SFDFile>
           <UseEnv>0</UseEnv>
-          <BinPath></BinPath>
+          <BinPath>C:\Programme\Mikrocom\Keil\C166\BIN\</BinPath>
           <IncludePath></IncludePath>
           <LibPath></LibPath>
           <RegisterFilePath></RegisterFilePath>
@@ -44,7 +44,7 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>.\</OutputDirectory>
-          <OutputName>MCTPraktikum</OutputName>
+          <OutputName>MCPraktikum</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>1</CreateHexFile>
@@ -130,7 +130,7 @@
           <Target>
             <UseTarget>0</UseTarget>
             <LoadApplicationAtStartup>1</LoadApplicationAtStartup>
-            <RunToMain>0</RunToMain>
+            <RunToMain>1</RunToMain>
             <RestoreBreakpoints>1</RestoreBreakpoints>
             <RestoreWatchpoints>1</RestoreWatchpoints>
             <RestoreMemoryDisplay>1</RestoreMemoryDisplay>
@@ -139,7 +139,7 @@
             <RestoreTracepoints>1</RestoreTracepoints>
           </Target>
           <RunDebugAfterBuild>0</RunDebugAfterBuild>
-          <TargetSelection>-1</TargetSelection>
+          <TargetSelection>2</TargetSelection>
           <SimDlls>
             <CpuDll></CpuDll>
             <CpuDllArguments></CpuDllArguments>
@@ -153,7 +153,7 @@
             <PeripheralDll></PeripheralDll>
             <PeripheralDllArguments></PeripheralDllArguments>
             <InitializationFile></InitializationFile>
-            <Driver></Driver>
+            <Driver>BIN\UL2OCDS.DLL</Driver>
           </TargetDlls>
         </DebugOption>
         <Utilities>
@@ -161,13 +161,13 @@
             <UseTargetDll>0</UseTargetDll>
             <UseExternalTool>0</UseExternalTool>
             <RunIndependent>0</RunIndependent>
-            <UpdateFlashBeforeDebugging>0</UpdateFlashBeforeDebugging>
-            <Capability>0</Capability>
-            <DriverSelection>-1</DriverSelection>
+            <UpdateFlashBeforeDebugging>1</UpdateFlashBeforeDebugging>
+            <Capability>1</Capability>
+            <DriverSelection>4096</DriverSelection>
           </Flash1>
           <bUseTDR>0</bUseTDR>
-          <Flash2></Flash2>
-          <Flash3></Flash3>
+          <Flash2>BIN\UL2OCDS.DLL</Flash2>
+          <Flash3>"" ()</Flash3>
           <Flash4></Flash4>
         </Utilities>
         <Target166>
@@ -286,50 +286,54 @@
       </TargetOption>
       <Groups>
         <Group>
-          <GroupName>Headerdateien</GroupName>
+          <GroupName>Header</GroupName>
           <Files>
+            <File>
+              <FileName>mcpr_xc161_timer.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\mcpr_xc161_timer.h</FilePath>
+            </File>
             <File>
               <FileName>mcpr_xc161_lcd.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\mcpr_xc161_lcd.h</FilePath>
             </File>
             <File>
-              <FileName>mcpr_xc161_timer.h</FileName>
+              <FileName>Platform_Types.h</FileName>
               <FileType>5</FileType>
-              <FilePath>.\mcpr_xc161_timer.h</FilePath>
+              <FilePath>.\Platform_Types.h</FilePath>
             </File>
           </Files>
         </Group>
         <Group>
-          <GroupName>Quelldateien</GroupName>
+          <GroupName>Source</GroupName>
           <Files>
+            <File>
+              <FileName>mcpr_xc161_timer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\mcpr_xc161_timer.c</FilePath>
+            </File>
             <File>
               <FileName>mcpr_xc161_ablauf.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\mcpr_xc161_ablauf.c</FilePath>
             </File>
             <File>
-              <FileName>mcpr_xc_start_002.A66</FileName>
-              <FileType>2</FileType>
-              <FilePath>.\mcpr_xc_start_002.A66</FilePath>
-            </File>
-            <File>
               <FileName>mcpr_xc161_lcd.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\mcpr_xc161_lcd.c</FilePath>
             </File>
-            <File>
-              <FileName>mcpr_xc161_timer.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\mcpr_xc161_timer.c</FilePath>
-            </File>
           </Files>
         </Group>
         <Group>
-          <GroupName>Debugger</GroupName>
-        </Group>
-        <Group>
-          <GroupName>Dokumentation</GroupName>
+          <GroupName>Misc</GroupName>
+          <Files>
+            <File>
+              <FileName>mcpr_xc_start_002.A66</FileName>
+              <FileType>2</FileType>
+              <FilePath>.\mcpr_xc_start_002.A66</FilePath>
+            </File>
+          </Files>
         </Group>
       </Groups>
     </Target>
@@ -358,7 +362,7 @@
           <SLE66LinkerMisc></SLE66LinkerMisc>
           <SFDFile></SFDFile>
           <UseEnv>0</UseEnv>
-          <BinPath></BinPath>
+          <BinPath>C:\Programme\Mikrocom\Keil\C166\BIN\</BinPath>
           <IncludePath></IncludePath>
           <LibPath></LibPath>
           <RegisterFilePath></RegisterFilePath>
@@ -371,10 +375,10 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>.\</OutputDirectory>
-          <OutputName>MCTPraktikum</OutputName>
+          <OutputName>MCPraktikum</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
-          <CreateHexFile>0</CreateHexFile>
+          <CreateHexFile>1</CreateHexFile>
           <DebugInformation>1</DebugInformation>
           <BrowseInformation>1</BrowseInformation>
           <ListingPath>.\</ListingPath>
@@ -613,50 +617,54 @@
       </TargetOption>
       <Groups>
         <Group>
-          <GroupName>Headerdateien</GroupName>
+          <GroupName>Header</GroupName>
           <Files>
+            <File>
+              <FileName>mcpr_xc161_timer.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\mcpr_xc161_timer.h</FilePath>
+            </File>
             <File>
               <FileName>mcpr_xc161_lcd.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\mcpr_xc161_lcd.h</FilePath>
             </File>
             <File>
-              <FileName>mcpr_xc161_timer.h</FileName>
+              <FileName>Platform_Types.h</FileName>
               <FileType>5</FileType>
-              <FilePath>.\mcpr_xc161_timer.h</FilePath>
+              <FilePath>.\Platform_Types.h</FilePath>
             </File>
           </Files>
         </Group>
         <Group>
-          <GroupName>Quelldateien</GroupName>
+          <GroupName>Source</GroupName>
           <Files>
+            <File>
+              <FileName>mcpr_xc161_timer.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\mcpr_xc161_timer.c</FilePath>
+            </File>
             <File>
               <FileName>mcpr_xc161_ablauf.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\mcpr_xc161_ablauf.c</FilePath>
             </File>
             <File>
-              <FileName>mcpr_xc_start_002.A66</FileName>
-              <FileType>2</FileType>
-              <FilePath>.\mcpr_xc_start_002.A66</FilePath>
-            </File>
-            <File>
               <FileName>mcpr_xc161_lcd.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\mcpr_xc161_lcd.c</FilePath>
             </File>
-            <File>
-              <FileName>mcpr_xc161_timer.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\mcpr_xc161_timer.c</FilePath>
-            </File>
           </Files>
         </Group>
         <Group>
-          <GroupName>Debugger</GroupName>
-        </Group>
-        <Group>
-          <GroupName>Dokumentation</GroupName>
+          <GroupName>Misc</GroupName>
+          <Files>
+            <File>
+              <FileName>mcpr_xc_start_002.A66</FileName>
+              <FileType>2</FileType>
+              <FilePath>.\mcpr_xc_start_002.A66</FilePath>
+            </File>
+          </Files>
         </Group>
       </Groups>
     </Target>

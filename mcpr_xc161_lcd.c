@@ -20,18 +20,21 @@ void lcd_init() {
    lcd_write(0x0, 0x80);
 }
 
-void lcd_backlight_controller(uint16 ks, uint8* lkey_state_up, uint8* lkey_state_down, uint8* last_lcd){															
+void lcd_backlight_controller(uint16 ks, uint8* lkey_state_up, uint8* lkey_state_down){															
    uint8 nkey_state_up   = ((uint8) ks);
    uint8 nkey_state_down = ((uint8) (ks>>8));
    if( nkey_state_up != *lkey_state_up || nkey_state_down != *lkey_state_down ){
-      lcd_on_until = timer_count+10000;
+      lcd_on_until = timer_back+100000;
    }
    *lkey_state_up   = nkey_state_up;
    *lkey_state_down = nkey_state_down;
-	 if( lcd_on_until > timer_count )
+	 if( lcd_on_until > timer_back )
 		 lcd_backlight(1);
-	 else
-		 lcd_backlight(0);
+	 else {	 
+		 lcd_backlight(0); 
+		 timer_back = 0;
+		 lcd_on_until = 0;
+	 }
 				
 }
 
@@ -62,7 +65,7 @@ void lcd_backlight_controller(uint16 ks, uint8* lkey_state_up, uint8* lkey_state
 }*/
 
 void lcd_backlight (uint8 state) {
-   DP7   = 0x00F0;
+	 DP7   = 0x00F0;
    P7_P4 = state;
 }
 
@@ -109,6 +112,9 @@ void lcd_writestatus(uint32 cycle, uint16 temp){
    char message[21];
    
    sprintf (message, "Temp: %d", temp);
+   message[9] = message[8];
+   message[8] = '.';
+   message[10] = '\0';
    lcd_sendstring(0, message);
    
    sprintf (message, "Freq: %ld", cycle);
@@ -118,7 +124,10 @@ void lcd_writestatus(uint32 cycle, uint16 temp){
       sprintf (message, "WARNING: TEMP", 0x0);
    else
       sprintf (message, " ", 0x0);
+   
    lcd_sendstring(2, message);
+   
+   lcd_sendstring(3, " ");
    
 }
 

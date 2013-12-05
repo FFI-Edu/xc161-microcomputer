@@ -1,56 +1,137 @@
-C166 COMPILER V7.53.0.0, MCPR_XC161_TIMER                                                  11/21/2013 17:02:41 PAGE 1   
+C166 COMPILER V7.53.0.0, MCPR_XC161_TIMER                                                  11/28/2013 17:25:07 PAGE 1   
 
 
 C166 COMPILER V7.53.0.0, COMPILATION OF MODULE MCPR_XC161_TIMER
 OBJECT MODULE PLACED IN mcpr_xc161_timer.OBJ
-COMPILER INVOKED BY: C:\Programme\Mikrocom\Keil\C166\BIN\C166.EXE mcpr_xc161_timer.c MODV2 COMPACT BROWSE MODV2 DEBUG TA
-                    -BS(2) 
+COMPILER INVOKED BY: C:\Programme\Mikrocom\Keil\C166\BIN\C166.EXE mcpr_xc161_timer.c MODV2 COMPACT BROWSE MODV2 DEBUG
 
  stmt lvl     source
 
     1         #include "mcpr_xc161_timer.h"
     2         
-    3         uint32 timer_count = 0;
-    4         
-    5         void timer_init() {
-    6  1        // TIMER 6
-    7  1        GPT12E_CAPREL     = 0xF680;
-    8  1        GPT12E_T6CON_T6UD = 0; // Aufwärts
-    9  1        GPT12E_T6CON     |= 2; // Prescaler 16
-   10  1        GPT12E_T6CON_T6R  = 1; // An
-   11  1        GPT12E_T6CON_T6SR = 1; // Reload aktiv
-   12  1        GPT12E_T6IC_IE    = 1; // Interrupt Enable
-   13  1        GPT12E_T6IC      |= 8; // Mittlere Prio
-   14  1        // TIMER 3
-   15  1        GPT12E_CAPREL     = 0xF680;
-   16  1        GPT12E_T3CON_T3UD = 0; // Aufwärts
-   17  1        GPT12E_T3CON     |= 8; // Counter Modus
-   18  1        GPT12E_T3CON     |= 1; // T3I
-   19  1        GPT12E_T3CON_T3R  = 1; // An
-   20  1        GPT12E_T3IC_IE    = 1; // Interrupt Enable
-   21  1        GPT12E_T3IC      |= 8; // Mittlere Prio
-   22  1      }
-   23         
-   24         void t3_i() interrupt 0x26 {
-   25  1        timer_count++;
-   26  1      }
+    3         uint32 timer_main  = 0;
+    4         uint32 timer_back  = 0;
+    5         uint32 timer_freq  = 0;
+    6         uint16 timer_temp  = 0;
+    7           
+    8         void timer_init() {
+    9  1              // CAPREL Register
+   10  1              GPT12E_CAPREL     = 0xF63C; // 63036
+   11  1              
+   12  1              // TIMER 6
+   13  1              GPT12E_T6CON  |= 0x8042; // 1000000001000010    
+   14  1              GPT12E_T6IC_IE = 1; // T6 Interrupt Enable
+   15  1              GPT12E_T6IC       |= 8; // T6 Mittlere Prio
+   16  1              // TIMER 3 (TEMP)
+   17  1      }
+   18         
+   19         void gpt1_cycle() {
+   20  1              // TIMER 3
+   21  1              GPT12E_T3CON = 0x0849; // 0000100001001001      
+   22  1              DP3_P6           = 0;      // T3IN
+   23  1      }
+   24         
+   25         void gpt1_temp() {
+   26  1              // TIMER 3 ( TIMER )    // 0000100001000000     
+   27  1              GPT12E_T3CON   = 0x0840;
+   28  1          DP3_P6                 = 0;     // T3IN
+   29  1              GPT12E_T3IC_IE = 1;     // T6 Interrupt Enable
+   30  1              GPT12E_T3IC       |= 0xB;   // T6 Hohe Prio
+   31  1              // TIMER 2 ( CAPTURE )  // 0000000001101001     
+   32  1              GPT12E_T2CON = 0x0069;
+   33  1              DP3_P5           = 0;
+   34  1              // TIMER 4 ( CAPTURE )  // 0000000001101001     
+   35  1              GPT12E_T4CON = 0x0069;
+   36  1              DP3_P3           = 0;
+   37  1      }
+   38         
+   39         void t6_i() interrupt 0x26 {
+   40  1              timer_main++;
+   41  1              timer_back++;
+   42  1              timer_freq++;
+   43  1      }
+   44         
+   45         void t3_i() interrupt 0x23 {
+   46  1              timer_temp++;
+   47  1      }
+   48         
+   49         /*GPT12E_T6CON_T6UD = 0; // Aufwärts
+   50                 GPT12E_T6CON             |= 2; // Prescaler 16
+   51                 GPT12E_T6CON_T6R        = 1; // An
+   52                 GPT12E_T6CON_T6SR = 1; // Reload aktiv*/
+   53         
+   54         /*GPT12E_T3CON_T3UD = 0; // Aufwärts
+   55                 GPT12E_T3CON             |= 8; // Counter Modus
+C166 COMPILER V7.53.0.0, MCPR_XC161_TIMER                                                  11/28/2013 17:25:07 PAGE 2   
+
+   56                 GPT12E_T3CON             |= 1; // T3I
+   57                 GPT12E_T3CON_T3R        = 1; // An*/
+   58         
+   59         uint32 get_cycle() {    
+   60  1        uint32 cycle     = 0;
+   61  1        uint32 timer_end = 0;
+   62  1              
+   63  1        gpt1_cycle();
+   64  1             
+   65  1        timer_freq = 0;
+   66  1        timer_end  = timer_freq + 100;
+   67  1             
+   68  1        while( timer_freq == 0 )
+   69  1          GPT12E_T3 = 0;
+   70  1             
+   71  1        while( timer_end > timer_freq );
+   72  1       
+   73  1        cycle = GPT12E_T3;
+   74  1                     
+   75  1        return (cycle * 10);
+   76  1      }
+   77         
+   78         uint16 get_temp() {
+   79  1              uint16 temp = 0;
+   80  1              uint16 wert1;
+   81  1              uint16 wert2;
+   82  1              gpt1_temp();
+   83  1              
+   84  1              // IC2Q7 => 1
+   85  1              IC2 = 0x80;
+   86  1              // Warten bis T4IN = 1
+   87  1              while( T4IN != 1 );
+   88  1              // Warten (1 ms)
+   89  1              wait(100);
+   90  1              // IC2Q7 => 0
+   91  1              IC2 = 0x00;
+   92  1              // Warten bis T4IN = 0
+   93  1              while( T4IN != 0 );
+   94  1              // Zeit Messen
+   95  1              wert1 = GPT12E_T4;
+   96  1              // Bis T2IN = 0
+   97  1              while( T2IN != 0 );
+   98  1              
+   99  1              wert2 = GPT12E_T2;
+  100  1              temp = wert1 - wert2;
+  101  1              temp = (temp-1200)>>2;
+  102  1              
+  103  1              return temp;
+  104  1      }
 
 
 MODULE INFORMATION:   INITIALIZED  UNINITIALIZED
-  CODE SIZE        =          54     --------
+  CODE SIZE        =         236     --------
   NEAR-CONST SIZE  =    --------     --------
   FAR-CONST SIZE   =    --------     --------
   HUGE-CONST SIZE  =    --------     --------
   XHUGE-CONST SIZE =    --------     --------
-  NEAR-DATA SIZE   =           4     --------
+  NEAR-DATA SIZE   =          14     --------
   FAR-DATA SIZE    =    --------     --------
   XHUGE-DATA SIZE  =    --------     --------
   IDATA-DATA SIZE  =    --------     --------
   SDATA-DATA SIZE  =    --------     --------
+C166 COMPILER V7.53.0.0, MCPR_XC161_TIMER                                                  11/28/2013 17:25:07 PAGE 3   
+
   BDATA-DATA SIZE  =    --------     --------
   HUGE-DATA SIZE   =    --------     --------
   BIT SIZE         =    --------     --------
-  INIT'L SIZE      =           8     --------
+  INIT'L SIZE      =          30     --------
 END OF MODULE INFORMATION.
 
 

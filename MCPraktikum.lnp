@@ -1,8 +1,8 @@
+"mcpr_xc161_timer.obj",
 "mcpr_xc161_ablauf.obj",
-"mcpr_xc_start_002.obj",
 "mcpr_xc161_lcd.obj",
-"mcpr_xc161_timer.obj" 
-TO "MCTPraktikum" 
+"mcpr_xc_start_002.obj" 
+TO "MCPraktikum" 
 CLASSES (ICODE (0x0-0x7FFF), NCODE (0x10000-0x1FFFF), 
 FCONST (0x0-0x7FFF, 0x10000-0xFFFFF), HCONST (0x0-0x7FFF, 0x10000-0xFFFFF), 
 XCONST (0x0-0x7FFF, 0x10000-0xFFFFF), NCONST (0x4000-0x7FFF), 
